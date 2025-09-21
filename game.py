@@ -22,6 +22,7 @@ class Block:
     x: float
     y: float
     z: float
+    sprite: int
     width: int = 16
     height: int = 4
 
@@ -30,10 +31,19 @@ player = Player(100, 100)
 blocks = []
 
 for row in range(10):
-    for col in range(10):
+    for col in range(9):
+        if row % 3 == 0 or col % 5 == 0:
+            continue
         height = random.randint(1, 4) ** 2
         for h in range(height):
-            blocks.append(Block(-50 + col * 18, 150 + row * 20, h * 4))
+            blocks.append(
+                Block(
+                    -420 + col * 20,
+                    800 + row * 20,
+                    h * 4,
+                    h % 2 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+                )
+            )
 
 
 def update():
@@ -73,8 +83,16 @@ def update():
 def draw():
     pyxel.cls(1)
     for block in sorted(blocks, key=lambda b: (b.y + b.x, b.z)):
-        screen_y = block.y // 2 - block.z
-        pyxel.blt(block.x + block.y // 2, screen_y, 0, 16, 0, 16, 16, colkey=0)
+        pyxel.blt(
+            block.x + block.y // 2,
+            block.y // 4 - block.z,
+            0,
+            16 + block.sprite * 16,
+            0,
+            16,
+            16,
+            colkey=0,
+        )
     pyxel.blt(player.x, player.y, 0, 0, 0, 16, 16, colkey=0)
 
 
