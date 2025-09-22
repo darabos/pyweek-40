@@ -51,6 +51,19 @@ player = Player(100, 100)
 blocks = make_city(radius=5, max_height=3)
 
 
+def closest_block(x: float, y: float):
+    closest = None
+    closest_dist = float("inf")
+    for block in blocks:
+        dx = block.x + block.width / 2 - (x + player.width / 2)
+        dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
+        dist = math.hypot(dx, dy)
+        if dist < closest_dist:
+            closest = block
+            closest_dist = dist
+    return closest
+
+
 def update():
     ACCELERATION = 0.8
     GRAVITY = 0.06
@@ -82,7 +95,8 @@ def update():
         player.x = 0
         player.vx = 0
     if pyxel.btn(pyxel.KEY_SPACE):
-        player.vy = -2  # jump
+        b = closest_block(player.x, player.y)
+        blocks.remove(b)
 
 
 def draw():
