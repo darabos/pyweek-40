@@ -54,10 +54,13 @@ def outline_block(x: float, y: float):
     pyxel.blt(x + 8, y + 8, 0, 16, 0, -9, -9, colkey=0)
 
 
-def make_city(radius: int, max_height: float):
+def make_city(radius: int, max_height: float, gapx: int, gapy: int):
     blocks = []
+    xs = []
     for row in range(radius * 2):
         for col in range(radius * 2):
+            if math.hypot(row - radius + 0.5, col - radius + 0.5) >= radius:
+                continue
             # Streets.
             if row % 3 == 1 or col % 5 == 2:
                 continue
@@ -66,21 +69,24 @@ def make_city(radius: int, max_height: float):
             for h in range(height):
                 sprite = 1 + int(5 * random.random() ** 5)
                 b = Block(
-                    x=112 + row * 12 - col * 12,
-                    y=300 - radius * 24 + row * 6 + col * 6,
+                    x=row * (10 + gapx) - col * (10 + gapy),
+                    y=300 - radius * 24 + row * (5 + gapx // 2) + col * (5 + gapy // 2),
                     z=h * 8,
                     sprite=sprite,
                     below=prev,
                 )
+                xs.append(b.x)
                 if prev:
                     prev.above = b
                 blocks.append(b)
                 prev = b
+    for b in blocks:
+        b.x += (pyxel.width - max(xs) + min(xs)) // 2 - min(xs) - 8
     return blocks
 
 
 player = Player(100, 100)
-blocks = make_city(radius=5, max_height=5)
+blocks = make_city(radius=5, max_height=5, gapx=2, gapy=4)
 
 
 def closest_block(x: float, y: float):
