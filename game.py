@@ -15,6 +15,12 @@ class Player:
     vy: float = 0
     width: int = 16
     height: int = 16
+    carrying: int = 0
+
+    def draw(self):
+        if self.carrying:
+            pyxel.blt(self.x, self.y + 10, 0, 0, 16 * self.carrying, 16, 16, colkey=0)
+        pyxel.blt(self.x, self.y, 0, 0, 0, 16, 16, colkey=0)
 
 
 @dataclass
@@ -25,6 +31,20 @@ class Block:
     sprite: int
     width: int = 16
     height: int = 4
+    above: "Block | None" = None
+    below: "Block | None" = None
+
+    def draw(self):
+        pyxel.blt(
+            self.x,
+            self.y - self.z,
+            0,
+            0,
+            self.sprite * 16,
+            16,
+            16,
+            colkey=0,
+        )
 
 
 def make_city(radius: int, max_height: float):
@@ -35,15 +55,19 @@ def make_city(radius: int, max_height: float):
             if row % 3 == 1 or col % 5 == 2:
                 continue
             height = 1 + int(max_height * random.random() ** 2)
+            prev = None
             for h in range(height):
-                blocks.append(
-                    Block(
-                        112 + row * 12 - col * 12,
-                        300 - radius * 24 + row * 6 + col * 6,
-                        h * 8,
-                        0 if (h + col * 7 + row * 5) % 27 > 1 else 1,
-                    )
+                b = Block(
+                    x=112 + row * 12 - col * 12,
+                    y=300 - radius * 24 + row * 6 + col * 6,
+                    z=h * 8,
+                    sprite=1 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+                    below=prev,
                 )
+                if prev:
+                    prev.above = b
+                blocks.append(b)
+                prev = b
     return blocks
 
 
@@ -55,6 +79,8 @@ def closest_block(x: float, y: float):
     closest = None
     closest_dist = float("inf")
     for block in blocks:
+        if block.above:
+            continue
         dx = block.x + block.width / 2 - (x + player.width / 2)
         dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
         dist = math.hypot(dx, dy)
@@ -94,25 +120,31 @@ def update():
     if player.x < 0:
         player.x = 0
         player.vx = 0
-    if pyxel.btn(pyxel.KEY_SPACE):
+    if pyxel.btnp(pyxel.KEY_SPACE):
         b = closest_block(player.x, player.y)
-        blocks.remove(b)
+        if player.carrying:
+            nb = Block(
+                x=b.x,
+                y=b.y,
+                z=b.z + 8,
+                sprite=player.carrying,
+                below=b,
+            )
+            b.above = nb
+            blocks.append(nb)
+            player.carrying = 0
+        else:
+            blocks.remove(b)
+            if b.below:
+                b.below.above = None
+            player.carrying = b.sprite
 
 
 def draw():
     pyxel.cls(1)
     for block in sorted(blocks, key=lambda b: (b.y, b.z)):
-        pyxel.blt(
-            block.x,
-            block.y - block.z,
-            0,
-            0,
-            16 + block.sprite * 16,
-            16,
-            16,
-            colkey=0,
-        )
-    pyxel.blt(player.x, player.y, 0, 0, 0, 16, 16, colkey=0)
+        block.draw()
+    player.draw()
 
 
 pyxel.run(update, draw)
