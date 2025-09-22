@@ -67,7 +67,7 @@ def make_city(radius: int, max_height: float, gapx: int, gapy: int):
             height = 1 + int(max_height * random.random() ** 4)
             prev = None
             for h in range(height):
-                sprite = 1 + int(5 * random.random() ** 5)
+                sprite = 1 + int(8 * random.random() ** 3)
                 b = Block(
                     x=row * (10 + gapx) - col * (10 + gapy),
                     y=300 - radius * 24 + row * (5 + gapx // 2) + col * (5 + gapy // 2),
