@@ -40,8 +40,8 @@ def make_city(radius: int, max_height: float):
                     Block(
                         112 + row * 12 - col * 12,
                         300 - radius * 24 + row * 6 + col * 6,
-                        h * 4,
-                        0 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+                        h * 8,
+                        0 if (h + col * 7 + row * 5) % 27 > 1 else 1,
                     )
                 )
     return blocks
@@ -92,8 +92,8 @@ def draw():
             block.x,
             block.y - block.z,
             0,
-            16 + block.sprite * 16,
             0,
+            16 + block.sprite * 16,
             16,
             16,
             colkey=0,
