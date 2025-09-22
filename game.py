@@ -54,14 +54,15 @@ def make_city(radius: int, max_height: float):
             # Streets.
             if row % 3 == 1 or col % 5 == 2:
                 continue
-            height = 1 + int(max_height * random.random() ** 2)
+            height = 1 + int(max_height * random.random() ** 4)
             prev = None
             for h in range(height):
+                sprite = 1 + int(5 * random.random() ** 5)
                 b = Block(
                     x=112 + row * 12 - col * 12,
                     y=300 - radius * 24 + row * 6 + col * 6,
                     z=h * 8,
-                    sprite=1 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+                    sprite=sprite,
                     below=prev,
                 )
                 if prev:
@@ -72,7 +73,7 @@ def make_city(radius: int, max_height: float):
 
 
 player = Player(100, 100)
-blocks = make_city(radius=5, max_height=3)
+blocks = make_city(radius=5, max_height=5)
 
 
 def closest_block(x: float, y: float):
@@ -82,7 +83,7 @@ def closest_block(x: float, y: float):
         if block.above:
             continue
         dx = block.x + block.width / 2 - (x + player.width / 2)
-        dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
+        dy = block.y + block.height / 2 - block.z - (y + player.height / 2 + 10)
         dist = math.hypot(dx, dy)
         if dist < closest_dist:
             closest = block
