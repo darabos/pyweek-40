@@ -27,23 +27,28 @@ class Block:
     height: int = 4
 
 
-player = Player(100, 100)
-blocks = []
-
-for row in range(10):
-    for col in range(9):
-        if row % 3 == 0 or col % 5 == 0:
-            continue
-        height = random.randint(1, 4) ** 2
-        for h in range(height):
-            blocks.append(
-                Block(
-                    -420 + col * 20,
-                    800 + row * 20,
-                    h * 4,
-                    h % 2 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+def make_city(radius: int, max_height: float):
+    blocks = []
+    for row in range(radius * 2):
+        for col in range(radius * 2):
+            # Streets.
+            if row % 3 == 1 or col % 5 == 2:
+                continue
+            height = 1 + int(max_height * random.random() ** 2)
+            for h in range(height):
+                blocks.append(
+                    Block(
+                        112 + row * 12 - col * 12,
+                        300 - radius * 24 + row * 6 + col * 6,
+                        h * 4,
+                        0 if (h + col * 7 + row * 5) % 27 > 1 else 2,
+                    )
                 )
-            )
+    return blocks
+
+
+player = Player(100, 100)
+blocks = make_city(radius=5, max_height=3)
 
 
 def update():
@@ -82,10 +87,10 @@ def update():
 
 def draw():
     pyxel.cls(1)
-    for block in sorted(blocks, key=lambda b: (b.y + b.x, b.z)):
+    for block in sorted(blocks, key=lambda b: (b.y, b.z)):
         pyxel.blt(
-            block.x + block.y // 2,
-            block.y // 4 - block.z,
+            block.x,
+            block.y - block.z,
             0,
             16 + block.sprite * 16,
             0,
