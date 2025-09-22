@@ -47,6 +47,13 @@ class Block:
         )
 
 
+def outline_block(x: float, y: float):
+    pyxel.blt(x - 1, y - 1, 0, 16, 0, 9, 9, colkey=0)
+    pyxel.blt(x + 8, y - 1, 0, 16, 0, -9, 9, colkey=0)
+    pyxel.blt(x - 1, y + 8, 0, 16, 0, 9, -9, colkey=0)
+    pyxel.blt(x + 8, y + 8, 0, 16, 0, -9, -9, colkey=0)
+
+
 def make_city(radius: int, max_height: float):
     blocks = []
     for row in range(radius * 2):
@@ -83,7 +90,7 @@ def closest_block(x: float, y: float):
         if block.above:
             continue
         dx = block.x + block.width / 2 - (x + player.width / 2)
-        dy = block.y + block.height / 2 - block.z - (y + player.height / 2 + 10)
+        dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
         dist = math.hypot(dx, dy)
         if dist < closest_dist:
             closest = block
@@ -122,8 +129,8 @@ def update():
         player.x = 0
         player.vx = 0
     if pyxel.btnp(pyxel.KEY_SPACE):
-        b = closest_block(player.x, player.y)
         if player.carrying:
+            b = closest_block(player.x, player.y + 18)
             nb = Block(
                 x=b.x,
                 y=b.y,
@@ -135,6 +142,7 @@ def update():
             blocks.append(nb)
             player.carrying = 0
         else:
+            b = closest_block(player.x, player.y + 10)
             blocks.remove(b)
             if b.below:
                 b.below.above = None
@@ -145,6 +153,12 @@ def draw():
     pyxel.cls(1)
     for block in sorted(blocks, key=lambda b: (b.y, b.z)):
         block.draw()
+    if player.carrying:
+        cb = closest_block(player.x, player.y + 18)
+        outline_block(cb.x, cb.y - cb.z - 8)
+    else:
+        cb = closest_block(player.x, player.y + 10)
+        outline_block(cb.x, cb.y - cb.z)
     player.draw()
 
 
