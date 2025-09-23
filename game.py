@@ -50,6 +50,28 @@ class Block:
         )
 
 
+@dataclass(kw_only=True)
+class Road(Block):
+    flipped: bool = False
+
+    def draw(self):
+        sx, sy = self.sprite
+        s = -1 if self.flipped else 1
+        o = 1 if self.flipped else 0
+        for i in range(3 + o):
+            i -= 1
+            pyxel.blt(
+                self.x + s * i * 4 + 2 * o,
+                self.y - self.z + 2 + i * 2 - o,
+                0,
+                sx * 16,
+                sy * 16,
+                s * 16,
+                16,
+                colkey=0,
+            )
+
+
 def outline_block(x: float, y: float):
     pyxel.blt(x - 1, y - 1, 0, 16, 0, 9, 9, colkey=0)
     pyxel.blt(x + 8, y - 1, 0, 16, 0, -9, 9, colkey=0)
@@ -57,42 +79,52 @@ def outline_block(x: float, y: float):
     pyxel.blt(x + 8, y + 8, 0, 16, 0, -9, -9, colkey=0)
 
 
-def make_city(radius: int, max_height: float, gapx: int, gapy: int):
+def load_city(cx: int, cy: int, max_height: float, gapx: int, gapy: int):
     blocks = []
-    xs = []
-    for row in range(radius * 2):
-        for col in range(radius * 2):
-            if math.hypot(row - radius + 0.5, col - radius + 0.5) >= radius:
-                continue
-            # Streets.
-            if row % 3 == 1 or col % 5 == 2:
+    xs, ys = [], []
+    tm = pyxel.tilemaps[0]
+    for row in range(16):
+        for col in range(16):
+            tile = tm.pget(cx + col, cy + row)
+            if tile == (0, 0):
                 continue
             height = 1 + int(max_height * random.random() ** 4)
             x = row * (10 + gapx) - col * (10 + gapy)
-            y = 300 - radius * 24 + row * (5 + gapx // 2) + col * (5 + gapy // 2)
-            prev = Block(x, y, z=-8, sprite=(3, 0), fixed=True)
+            y = row * (5 + gapx // 2) + col * (5 + gapy // 2)
+            xs.append(x)
+            ys.append(y)
+            match tile:
+                case (0, 1) | (3, 1):
+                    base = Block(x, y, z=0, sprite=(3, 0), fixed=True)
+                case (1, 1):
+                    base = Road(x, y, z=0, sprite=(3, 1), fixed=True)
+                case (1, 0):
+                    base = Road(x, y, z=0, sprite=(3, 1), fixed=True, flipped=True)
+            prev = base
             blocks.append(prev)
+            if tile != (0, 1):
+                continue
             for h in range(height):
                 sprite = 1 + int(8 * random.random() ** 3)
                 b = Block(
                     x,
                     y,
-                    z=h * 8,
+                    z=h * 8 + 8,
                     sprite=(0, sprite),
                     below=prev,
                 )
-                xs.append(b.x)
                 if prev:
                     prev.above = b
                 blocks.append(b)
                 prev = b
     for b in blocks:
         b.x += (pyxel.width - max(xs) + min(xs)) // 2 - min(xs) - 8
+        b.y += 80 + (pyxel.height - max(ys) + min(ys)) // 2 - min(ys) - 8
     return blocks
 
 
 player = Player(100, 100)
-blocks = make_city(radius=5, max_height=5, gapx=2, gapy=4)
+blocks = load_city(cx=16, cy=0, max_height=5, gapx=2, gapy=4)
 
 
 def closest_block(x: float, y: float, grab: bool):
