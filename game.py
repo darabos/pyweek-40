@@ -16,6 +16,7 @@ class Player:
     vy: float = 0
     width: int = 16
     height: int = 16
+    maximum_altitude: int = 300
     carrying: tuple[int, int] | None = None
 
     def draw(self):
@@ -45,8 +46,8 @@ class Player:
         if self.y > pyxel.height - self.height:
             self.y = pyxel.height - self.height
             self.vy = 0
-        if self.y < 0:
-            self.y = 0
+        if self.y < -self.maximum_altitude:
+            self.y = -self.maximum_altitude
             self.vy = 0
         if self.x > pyxel.width - self.width:
             self.x = pyxel.width - self.width
@@ -276,9 +277,53 @@ def tilemap_to_pathmap(cx: int, cy: int, tilemap: pyxel.Tilemap):
     return pathmap
 
 
+class Background:
+    def __init__(self):
+        pass
+
+    def update(self):
+        pass
+
+    def draw(self, altitude):
+        ground_sky_line = 40 + altitude + 48 - 1
+        dark_sky_line = int(30 + altitude * 0.7)
+        sky_space_line = int(-20 + altitude * 0.7)
+        def clip_blt(x, y, u, v, w, h, colkey=0):
+            y = int(y)
+            h = min(h, ground_sky_line - y)
+            pyxel.blt(x, y, 1, u, v, w, h, colkey=colkey)
+        if dark_sky_line >= 320:
+            pyxel.cls(0)
+        else:
+            pyxel.cls(1)
+            if sky_space_line > 0:
+                pyxel.rect(0, 0, 240, sky_space_line, 0)
+                pyxel.rect(0, sky_space_line, 240, dark_sky_line - sky_space_line, 5)
+                pyxel.rect(0, dark_sky_line, 240, ground_sky_line - dark_sky_line, 6)
+                pass
+            elif dark_sky_line > 0:
+                pyxel.rect(0, 0, 240, dark_sky_line, 5)
+                pyxel.rect(0, dark_sky_line, 240, ground_sky_line - dark_sky_line, 6)
+            else:
+                pyxel.rect(0, 0, 240, ground_sky_line, 6)
+        clip_blt(0, 80 + altitude * 0.7, 24, 0, 32, 48)
+        clip_blt(24, 80 + altitude * 0.7, 16, 0, -24, 48)
+        for x in range(3, 15):
+            clip_blt(x * 16, 80 + altitude * 0.7, 0, 0, 16, 48)
+        for x in range(15):
+            clip_blt(x * 16, 30 + altitude * 0.7, 48, 0, 16, 48)
+        for x in range(15):
+            clip_blt(x * 16, -20 + altitude * 0.7, 64, 0, 16, 48, colkey=None)
+        pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)
+        clip_blt(160, 64 + altitude * 0.75, 16, 144, 88, 56)
+        clip_blt(0, 56 + altitude * 0.9, 0, 104, 240, 40)
+        pyxel.blt(0, 40 + altitude, 1, 0, 48, 240, 48, colkey=0)
+
+
 player = Player(100, 100)
 city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14)
 invaders = []
+background = Background()
 
 
 def make_invader():
@@ -308,6 +353,7 @@ def closest_block(x: float, y: float, grab: bool):
 
 
 def update():
+    background.update()
     player.update()
     for invader in invaders:
         invader.update()
@@ -317,7 +363,13 @@ def update():
 
 
 def draw():
-    pyxel.cls(1)
+    pyxel.camera(0, 0)
+    if player.y < 40:
+        camera_altitude = 40 - player.y
+    else:
+        camera_altitude = 0
+    background.draw(camera_altitude)
+    pyxel.camera(0, -camera_altitude)
     for thing in sorted(city.blocks + invaders, key=lambda b: (b.y, b.z)):
         thing.draw()
     if player.carrying:
