@@ -83,20 +83,26 @@ class Invader:
     prev_x: float = 0
     prev_y: float = 0
     prev_z: float = 0
+    dead: bool = False
 
     def draw(self):
-        pyxel.pset(self.prev_x, self.prev_y - self.prev_z, col=7)
-        pyxel.pset(self.x, self.y - self.z, col=7)
+        col = 7
+        pyxel.pset(self.prev_x, self.prev_y - self.prev_z, col=col)
+        pyxel.pset(self.x, self.y - self.z, col=col)
 
     def update(self):
         self.prev_x = self.x
         self.prev_y = self.y
         self.prev_z = self.z
-        self.z -= 0.5
-        self.x += random.randint(-1, 1)
-        self.y += random.randint(-1, 1)
-        if self.z < 0:
-            self.z = 200
+        t = city.screen_to_tile(self.x, self.y)
+        dc, dr = city.pathmap.get(t, (0, 0))
+        if dc == 0 and dr == 0:
+            self.dead = True
+            return
+        stepx, stepy = 12, 14
+        s = 0.1 * random.random()
+        self.x += (dr * stepx - dc * stepy) * s
+        self.y += (dr * stepx // 2 + dc * stepy // 2) * s
 
 
 @dataclass
@@ -159,6 +165,8 @@ class City:
     blocks: list[Block]
     tilemap: pyxel.Tilemap
     screen_to_tile: Callable[[float, float], tuple[int, int]]
+    # Direction invaders want to go in each tile cell.
+    pathmap: dict[tuple[int, int], tuple[int, int]]
 
     @staticmethod
     def load(cx: int, cy: int, max_height: float, stepx: int, stepy: int):
@@ -213,29 +221,73 @@ class City:
             b.y += y_off
 
         def screen_to_tile(sx: float, sy: float):
-            # x = row * stepx - col * stepy
-            # y = row * stepx // 2 + col * stepy // 2
-            # 2y = row * stepx + col * stepy
-            # x + 2y = 2 * row * stepx
-            # 2y - x = 2 * col * stepy
             tx = sx - x_off - 8
             t2y = 2 * (sy - y_off + 8)
             col = (t2y - tx) // 2 // stepy
             row = (t2y + tx) // 2 // stepx
             return cx + col, cy + row
 
-        return City(blocks=blocks, tilemap=tilemap, screen_to_tile=screen_to_tile)
+        return City(
+            blocks=blocks,
+            tilemap=tilemap,
+            pathmap=tilemap_to_pathmap(cx, cy, tilemap),
+            screen_to_tile=screen_to_tile,
+        )
+
+
+T_GOAL = 3, 1
+T_BLOCK = 0, 1
+
+
+def tilemap_to_pathmap(cx: int, cy: int, tilemap: pyxel.Tilemap):
+    distance = {}
+    for row in range(cy, cy + 16):
+        for col in range(cx, cx + 16):
+            tile = tilemap.pget(col, row)
+            if tile == T_GOAL:
+                distance[col, row] = 0
+            elif tile == T_BLOCK:
+                distance[col, row] = float("inf")
+    for n in range(16 * 16):
+        for row in range(cy, cy + 16):
+            for col in range(cx, cx + 16):
+                if (col, row) in distance:
+                    continue
+                best = float("inf")
+                for dc, dr in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    if (col + dc, row + dr) in distance:
+                        d = distance[col + dc, row + dr]
+                        if d + 1 < best:
+                            best = d + 1
+                if best < 100:
+                    distance[col, row] = best
+    pathmap = {}
+    for row in range(cy, cy + 16):
+        for col in range(cx, cx + 16):
+            best = float("inf")
+            best_dir = 0, 0
+            for dc, dr in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
+                if (col + dc, row + dr) in distance:
+                    d = distance[col + dc, row + dr]
+                    if d < best:
+                        best = d
+                        best_dir = dc, dr
+            pathmap[col, row] = best_dir
+    return pathmap
 
 
 player = Player(100, 100)
 city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14)
 invaders = []
-for i in range(10000):
+
+
+def make_invader():
+    deg = random.random() * 2 * math.pi
     invaders.append(
         Invader(
-            x=random.randint(0, pyxel.width),
-            y=200 + random.randint(0, 100),
-            z=random.randint(0, 200),
+            x=pyxel.width * 0.5 + math.cos(deg) * 120,
+            y=230 + math.sin(deg) * 60,
+            z=0,
         )
     )
 
@@ -259,6 +311,9 @@ def update():
     player.update()
     for invader in invaders:
         invader.update()
+    invaders[:] = [i for i in invaders if not i.dead]
+    for i in range(20):
+        make_invader()
 
 
 def draw():
