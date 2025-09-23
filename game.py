@@ -15,11 +15,12 @@ class Player:
     vy: float = 0
     width: int = 16
     height: int = 16
-    carrying: int = 0
+    carrying: tuple[int, int] | None = None
 
     def draw(self):
         if self.carrying:
-            pyxel.blt(self.x, self.y + 10, 0, 0, 16 * self.carrying, 16, 16, colkey=0)
+            sx, sy = self.carrying
+            pyxel.blt(self.x, self.y + 10, 0, 16 * sx, 16 * sy, 16, 16, colkey=0)
         pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
 
@@ -28,19 +29,21 @@ class Block:
     x: float
     y: float
     z: float
-    sprite: int
+    sprite: tuple[int, int]
     width: int = 16
     height: int = 4
     above: "Block | None" = None
     below: "Block | None" = None
+    fixed: bool = False
 
     def draw(self):
+        sx, sy = self.sprite
         pyxel.blt(
             self.x,
             self.y - self.z,
             0,
-            0,
-            self.sprite * 16,
+            sx * 16,
+            sy * 16,
             16,
             16,
             colkey=0,
@@ -65,14 +68,17 @@ def make_city(radius: int, max_height: float, gapx: int, gapy: int):
             if row % 3 == 1 or col % 5 == 2:
                 continue
             height = 1 + int(max_height * random.random() ** 4)
-            prev = None
+            x = row * (10 + gapx) - col * (10 + gapy)
+            y = 300 - radius * 24 + row * (5 + gapx // 2) + col * (5 + gapy // 2)
+            prev = Block(x, y, z=-8, sprite=(3, 0), fixed=True)
+            blocks.append(prev)
             for h in range(height):
                 sprite = 1 + int(8 * random.random() ** 3)
                 b = Block(
-                    x=row * (10 + gapx) - col * (10 + gapy),
-                    y=300 - radius * 24 + row * (5 + gapx // 2) + col * (5 + gapy // 2),
+                    x,
+                    y,
                     z=h * 8,
-                    sprite=sprite,
+                    sprite=(0, sprite),
                     below=prev,
                 )
                 xs.append(b.x)
@@ -89,11 +95,11 @@ player = Player(100, 100)
 blocks = make_city(radius=5, max_height=5, gapx=2, gapy=4)
 
 
-def closest_block(x: float, y: float):
+def closest_block(x: float, y: float, grab: bool):
     closest = None
     closest_dist = float("inf")
     for block in blocks:
-        if block.above:
+        if block.above or block.fixed and grab:
             continue
         dx = block.x + block.width / 2 - (x + player.width / 2)
         dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
@@ -136,7 +142,7 @@ def update():
         player.vx = 0
     if pyxel.btnp(pyxel.KEY_SPACE):
         if player.carrying:
-            b = closest_block(player.x, player.y + 18)
+            b = closest_block(player.x, player.y + 18, grab=False)
             nb = Block(
                 x=b.x,
                 y=b.y,
@@ -146,9 +152,9 @@ def update():
             )
             b.above = nb
             blocks.append(nb)
-            player.carrying = 0
+            player.carrying = None
         else:
-            b = closest_block(player.x, player.y + 10)
+            b = closest_block(player.x, player.y + 10, grab=True)
             blocks.remove(b)
             if b.below:
                 b.below.above = None
@@ -160,10 +166,10 @@ def draw():
     for block in sorted(blocks, key=lambda b: (b.y, b.z)):
         block.draw()
     if player.carrying:
-        cb = closest_block(player.x, player.y + 18)
+        cb = closest_block(player.x, player.y + 18, grab=False)
         outline_block(cb.x, cb.y - cb.z - 8)
     else:
-        cb = closest_block(player.x, player.y + 10)
+        cb = closest_block(player.x, player.y + 10, grab=True)
         outline_block(cb.x, cb.y - cb.z)
     player.draw()
 
