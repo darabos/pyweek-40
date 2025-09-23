@@ -20,7 +20,7 @@ class Player:
     def draw(self):
         if self.carrying:
             pyxel.blt(self.x, self.y + 10, 0, 0, 16 * self.carrying, 16, 16, colkey=0)
-        pyxel.blt(self.x, self.y, 0, 0, 0, 16, 16, colkey=0)
+        pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
 
 @dataclass
