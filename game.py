@@ -88,29 +88,37 @@ def load_city(cx: int, cy: int, max_height: float, gapx: int, gapy: int):
             tile = tm.pget(cx + col, cy + row)
             if tile == (0, 0):
                 continue
-            height = 1 + int(max_height * random.random() ** 4)
+            height = int(max_height * random.random() ** 4)
             x = row * (10 + gapx) - col * (10 + gapy)
             y = row * (5 + gapx // 2) + col * (5 + gapy // 2)
             xs.append(x)
             ys.append(y)
+
             match tile:
-                case (0, 1) | (3, 1):
+                case (0, 1):
                     base = Block(x, y, z=0, sprite=(3, 0), fixed=True)
+                    sprite_x = 0
+                    sprites = 8
+                case (3, 1):
+                    base = Block(x, y, z=0, sprite=(3, 0), fixed=True)
+                    height = 7
+                    sprite_x = 3
+                    sprites = 2
                 case (1, 1):
-                    base = Road(x, y, z=0, sprite=(3, 1), fixed=True)
+                    base = Road(x, y, z=0, sprite=(3, 3), fixed=True)
+                    height = 0
                 case (1, 0):
-                    base = Road(x, y, z=0, sprite=(3, 1), fixed=True, flipped=True)
+                    base = Road(x, y, z=0, sprite=(3, 3), fixed=True, flipped=True)
+                    height = 0
             prev = base
             blocks.append(prev)
-            if tile != (0, 1):
-                continue
             for h in range(height):
-                sprite = 1 + int(8 * random.random() ** 3)
+                sprite = 1 + int(sprites * random.random() ** 3)
                 b = Block(
                     x,
                     y,
                     z=h * 8 + 8,
-                    sprite=(0, sprite),
+                    sprite=(sprite_x, sprite),
                     below=prev,
                 )
                 if prev:
@@ -131,7 +139,7 @@ def closest_block(x: float, y: float, grab: bool):
     closest = None
     closest_dist = float("inf")
     for block in blocks:
-        if block.above or block.fixed and grab:
+        if isinstance(block, Road) or block.above or block.fixed and grab:
             continue
         dx = block.x + block.width / 2 - (x + player.width / 2)
         dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
