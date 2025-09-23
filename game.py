@@ -4,12 +4,18 @@ import pyxel
 from dataclasses import dataclass
 from collections.abc import Callable
 
+
 pyxel.init(240, 320)
-pyxel.load("art.pyxres")
+pyxel.load("assets/art.pyxres")
+
+_SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
+_SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
+_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 
 @dataclass
 class Player:
+    game: "Game"
     x: float
     y: float
     vx: float = 0
@@ -26,9 +32,9 @@ class Player:
         pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
     def update(self):
-        ACCELERATION = 0.8
-        GRAVITY = 0.06
-        DRAG = 0.02
+        ACCELERATION = 1.0
+        GRAVITY = 0.0
+        DRAG = 0.08
         if pyxel.btn(pyxel.KEY_LEFT):
             self.vx -= ACCELERATION
         if pyxel.btn(pyxel.KEY_RIGHT):
@@ -57,7 +63,7 @@ class Player:
             self.vx = 0
         if pyxel.btnp(pyxel.KEY_SPACE):
             if self.carrying:
-                b = closest_block(self.x, self.y + 18, grab=False)
+                b = self.game.closest_block(self.x, self.y + 18, grab=False)
                 nb = Block(
                     x=b.x,
                     y=b.y,
@@ -66,11 +72,11 @@ class Player:
                     below=b,
                 )
                 b.above = nb
-                city.blocks.append(nb)
+                self.game.city.blocks.append(nb)
                 self.carrying = None
             else:
-                b = closest_block(self.x, self.y + 10, grab=True)
-                city.blocks.remove(b)
+                b = self.game.closest_block(self.x, self.y + 10, grab=True)
+                self.game.city.blocks.remove(b)
                 if b.below:
                     b.below.above = None
                 self.carrying = b.sprite
@@ -81,6 +87,7 @@ class Invader:
     x: float
     y: float
     z: float
+    city: "City"
     prev_x: float = 0
     prev_y: float = 0
     prev_z: float = 0
@@ -95,8 +102,8 @@ class Invader:
         self.prev_x = self.x
         self.prev_y = self.y
         self.prev_z = self.z
-        t = city.screen_to_tile(self.x, self.y)
-        dc, dr = city.pathmap.get(t, (0, 0))
+        t = self.city.screen_to_tile(self.x, self.y)
+        dc, dr = self.city.pathmap.get(t, (0, 0))
         if dc == 0 and dr == 0:
             self.dead = True
             return
@@ -320,65 +327,120 @@ class Background:
         pyxel.blt(0, 40 + altitude, 1, 0, 48, 240, 48, colkey=0)
 
 
-player = Player(100, 100)
-city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14)
-invaders = []
-background = Background()
-
-
-def make_invader():
+def make_invader(city: City):
     deg = random.random() * 2 * math.pi
-    invaders.append(
-        Invader(
-            x=pyxel.width * 0.5 + math.cos(deg) * 120,
-            y=230 + math.sin(deg) * 60,
-            z=0,
-        )
+    return Invader(
+        city=city,
+        x=pyxel.width * 0.5 + math.cos(deg) * 120,
+        y=230 + math.sin(deg) * 60,
+        z=0,
     )
 
 
-def closest_block(x: float, y: float, grab: bool):
-    closest = None
-    closest_dist = float("inf")
-    for block in city.blocks:
-        if isinstance(block, Road) or block.above or block.fixed and grab:
-            continue
-        dx = block.x + block.width / 2 - (x + player.width / 2)
-        dy = block.y + block.height / 2 - block.z - (y + player.height / 2)
-        dist = math.hypot(dx, dy)
-        if dist < closest_dist:
-            closest = block
-            closest_dist = dist
-    return closest
+class Game:
+
+    def __init__(self):
+        self.player = Player(self, 100, 100)
+        self.city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14)
+        self.invaders = []
+        self.background = Background()
+
+    def update(self):
+        self.background.update()
+        self.player.update()
+        for invader in self.invaders:
+            invader.update()
+        self.invaders[:] = [i for i in self.invaders if not i.dead]
+        for i in range(20):
+            self.invaders.append(make_invader(self.city))
+
+    def draw(self):
+        pyxel.camera(0, 0)
+        if self.player.y < 40:
+            camera_altitude = 40 - self.player.y
+        else:
+            camera_altitude = 0
+        self.background.draw(camera_altitude)
+        pyxel.camera(0, -camera_altitude)
+        for thing in sorted(self.city.blocks + self.invaders, key=lambda b: (b.y, b.z)):
+            thing.draw()
+        if self.player.carrying:
+            cb = self.closest_block(self.player.x, self.player.y + 18, grab=False)
+            outline_block(cb.x, cb.y - cb.z - 16)
+        else:
+            cb = self.closest_block(self.player.x, self.player.y + 10, grab=True)
+            outline_block(cb.x, cb.y - cb.z - 8)
+        self.player.draw()
+
+    def closest_block(self, x: float, y: float, grab: bool):
+        closest = None
+        closest_dist = float("inf")
+        for block in self.city.blocks:
+            if isinstance(block, Road) or block.above or block.fixed and grab:
+                continue
+            dx = block.x + block.width / 2 - (x + self.player.width / 2)
+            dy = block.y + block.height / 2 - block.z - (y + self.player.height / 2)
+            dist = math.hypot(dx, dy)
+            if dist < closest_dist:
+                closest = block
+                closest_dist = dist
+        return closest
 
 
-def update():
-    background.update()
-    player.update()
-    for invader in invaders:
-        invader.update()
-    invaders[:] = [i for i in invaders if not i.dead]
-    for i in range(20):
-        make_invader()
+
+def text_centered(text: str, y: int, *, font: pyxel.Font, color: int):
+    x = pyxel.width // 2
+    dx = font.text_width(text) // 2
+    pyxel.text(x - dx, y, text, color, font)
 
 
-def draw():
-    pyxel.camera(0, 0)
-    if player.y < 40:
-        camera_altitude = 40 - player.y
-    else:
-        camera_altitude = 0
-    background.draw(camera_altitude)
-    pyxel.camera(0, -camera_altitude)
-    for thing in sorted(city.blocks + invaders, key=lambda b: (b.y, b.z)):
-        thing.draw()
-    if player.carrying:
-        cb = closest_block(player.x, player.y + 18, grab=False)
-        outline_block(cb.x, cb.y - cb.z - 16)
-    else:
-        cb = closest_block(player.x, player.y + 10, grab=True)
-        outline_block(cb.x, cb.y - cb.z - 8)
-    player.draw()
+class Menu:
+
+    def __init__(self):
+        self.selected = 0
+
+        def _PlayGame():
+            global game_card
+            game_card.active = Game()
+
+        self.menu_items = (
+            ("Play Game", _PlayGame),
+            ("Settings", lambda: None),
+            ("Quit", lambda: None),
+        )
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_DOWN):
+            self.selected = min(self.selected + 1, len(self.menu_items) - 1)
+        if pyxel.btnp(pyxel.KEY_UP):
+            self.selected = max(self.selected - 1, 0)
+        if pyxel.btnp(pyxel.KEY_RETURN):
+            _, action = self.menu_items[self.selected]
+            action()
+
+    def draw(self):
+        pyxel.cls(0)
+        pyxel.text(56 - 16, 8, "Consumer", 8, _SPLEEN_16x32)
+        pyxel.text(56 + 16, 40, "Consumer", 8, _SPLEEN_16x32)
+
+        for i, (item_text, _) in enumerate(self.menu_items):
+            if i == self.selected:
+                text_centered(f"> {item_text} <", 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=(pyxel.frame_count // 3) % 16)
+            else:
+                text_centered(item_text, 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=8)
 
 
-pyxel.run(update, draw)
+class Dispatcher:
+
+    def __init__(self):
+        self.active = Menu()
+
+    def update(self):
+        self.active.update()
+
+    def draw(self):
+        self.active.draw()
+
+
+game_card = Dispatcher()
+pyxel.run(game_card.update, game_card.draw)
