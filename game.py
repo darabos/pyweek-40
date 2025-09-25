@@ -406,7 +406,7 @@ class Menu:
         self.menu_items = (
             ("Play Game", _PlayGame),
             ("Settings", lambda: None),
-            ("Quit", lambda: None),
+            ("Quit", lambda: pyxel.quit()),
         )
 
     def update(self):
