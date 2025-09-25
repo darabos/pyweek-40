@@ -1,6 +1,8 @@
+import enum
 import math
 import random
 import pyxel
+import threading
 from dataclasses import dataclass
 from collections.abc import Callable
 
@@ -13,6 +15,14 @@ _SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
 _SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 
+class Direction(enum.IntEnum):
+    NONE = 0
+    UP = 1
+    DOWN = 2
+    LEFT = 3
+    RIGHT = 4
+
+
 @dataclass
 class Player:
     game: "Game"
@@ -22,6 +32,7 @@ class Player:
     vy: float = 0
     width: int = 16
     height: int = 16
+    direction: Direction = Direction.NONE.value
     maximum_altitude: int = 300
     carrying: tuple[int, int] | None = None
 
@@ -31,18 +42,32 @@ class Player:
             pyxel.blt(self.x, self.y + 10, 0, 16 * sx, 16 * sy, 16, 16, colkey=0)
         pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
+    def handle_keypress(self) -> Direction:
+        if pyxel.btn(pyxel.KEY_UP):
+            return Direction.UP.value
+        if pyxel.btn(pyxel.KEY_DOWN):
+            return Direction.DOWN.value
+        if pyxel.btn(pyxel.KEY_LEFT):
+            return Direction.LEFT.value
+        if pyxel.btn(pyxel.KEY_RIGHT):
+            return Direction.RIGHT.value
+        return Direction.NONE.value
+
     def update(self):
         ACCELERATION = 1.0
         GRAVITY = 0.0
         DRAG = 0.08
-        if pyxel.btn(pyxel.KEY_LEFT):
-            self.vx -= ACCELERATION
-        if pyxel.btn(pyxel.KEY_RIGHT):
-            self.vx += ACCELERATION
-        if pyxel.btn(pyxel.KEY_UP):
-            self.vy -= ACCELERATION
-        if pyxel.btn(pyxel.KEY_DOWN):
-            self.vy += ACCELERATION
+
+        match self.handle_keypress():
+            case Direction.LEFT.value:
+                self.vx -= ACCELERATION
+            case Direction.RIGHT.value:
+                self.vx += ACCELERATION
+            case Direction.UP.value:
+                self.vy -= ACCELERATION
+            case Direction.DOWN.value:
+                self.vy += ACCELERATION
+
         self.vy += GRAVITY
         self.x += self.vx
         self.y += self.vy
@@ -80,6 +105,30 @@ class Player:
                 if b.below:
                     b.below.above = None
                 self.carrying = b.sprite
+
+
+@dataclass
+class RandomPlayer(Player):
+    """Fake player that takes a random direction every second. Used in the menu background."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.maximum_altitude = 0
+
+        self.timer: threading.Timer | None = None
+        self.direction = Direction.NONE.value
+        self.change_direction()
+
+    def handle_keypress(self) -> Direction:
+        return self.direction
+
+    def change_direction(self):
+        self.direction = random.choice(list(Direction.__members__.values()))
+
+        if self.timer:
+            self.timer.cancel()
+        self.timer = threading.Timer(1.0, self.change_direction)
+        self.timer.start()
 
 
 @dataclass
@@ -172,12 +221,13 @@ def outline_block(x: float, y: float):
 class City:
     blocks: list[Block]
     tilemap: pyxel.Tilemap
+    y_offset_base: int
     screen_to_tile: Callable[[float, float], tuple[int, int]]
     # Direction invaders want to go in each tile cell.
     pathmap: dict[tuple[int, int], tuple[int, int]]
 
     @staticmethod
-    def load(cx: int, cy: int, max_height: float, stepx: int, stepy: int):
+    def load(cx: int, cy: int, max_height: float, stepx: int, stepy: int, *, y_offset_base: int):
         blocks = []
         xs, ys = [], []
         tilemap = pyxel.tilemaps[0]
@@ -223,7 +273,7 @@ class City:
                     blocks.append(b)
                     prev = b
         x_off = (pyxel.width - max(xs) + min(xs)) // 2 - min(xs) - 8
-        y_off = 80 + (pyxel.height - max(ys) + min(ys)) // 2 - min(ys) - 8
+        y_off = y_offset_base + (pyxel.height - max(ys) + min(ys)) // 2 - min(ys) - 8
         for b in blocks:
             b.x += x_off
             b.y += y_off
@@ -240,6 +290,7 @@ class City:
             tilemap=tilemap,
             pathmap=tilemap_to_pathmap(cx, cy, tilemap),
             screen_to_tile=screen_to_tile,
+            y_offset_base=y_offset_base,
         )
 
 
@@ -332,18 +383,19 @@ def make_invader(city: City):
     return Invader(
         city=city,
         x=pyxel.width * 0.5 + math.cos(deg) * 120,
-        y=230 + math.sin(deg) * 60,
+        y=150 + city.y_offset_base + math.sin(deg) * 60,
         z=0,
     )
 
 
 class Game:
 
-    def __init__(self):
-        self.player = Player(self, 100, 100)
-        self.city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14)
+    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, adjust_camera_altitude: bool = True):
+        self.player = player_factory(self)
+        self.city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14, y_offset_base=city_y_offset_base)
         self.invaders = []
         self.background = Background()
+        self.adjust_camera_altitude = adjust_camera_altitude
 
     def update(self):
         self.background.update()
@@ -356,7 +408,7 @@ class Game:
 
     def draw(self):
         pyxel.camera(0, 0)
-        if self.player.y < 40:
+        if self.player.y < 40 and self.adjust_camera_altitude:
             camera_altitude = 40 - self.player.y
         else:
             camera_altitude = 0
@@ -399,10 +451,15 @@ class Menu:
     def __init__(self):
         self.selected = 0
         self.cycle_colors = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
+        self.background_game = Game(
+            player_factory=lambda game: RandomPlayer(game, 50, 100),
+            city_y_offset_base=96,
+            adjust_camera_altitude=False,
+        )
 
         def _PlayGame():
             global game_card
-            game_card.active = Game()
+            game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
 
         self.menu_items = (
             ("Play Game", _PlayGame),
@@ -411,6 +468,8 @@ class Menu:
         )
 
     def update(self):
+        self.background_game.update()
+
         if pyxel.btnp(pyxel.KEY_DOWN):
             self.selected = min(self.selected + 1, len(self.menu_items) - 1)
         if pyxel.btnp(pyxel.KEY_UP):
@@ -420,17 +479,17 @@ class Menu:
             action()
 
     def draw(self):
-        pyxel.cls(pyxel.COLOR_BLACK)
+        self.background_game.draw()
 
-        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_RED, _SPLEEN_16x32)
-        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_RED, _SPLEEN_16x32)
+        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_WHITE, _SPLEEN_16x32)
+        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_WHITE, _SPLEEN_16x32)
 
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
                 color = self.cycle_colors[(pyxel.frame_count // 3) % len(self.cycle_colors)]
-                text_centered(f"> {item_text} <", 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=color)
+                text_centered(f"> {item_text} <", 96 + (16 + 8) * i, font=_SPLEEN_8x16, color=color)
             else:
-                text_centered(item_text, 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=pyxel.COLOR_RED)
+                text_centered(item_text, 96 + (16 + 8) * i, font=_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
 
 
 class Dispatcher:
