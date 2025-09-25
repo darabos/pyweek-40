@@ -398,6 +398,7 @@ class Menu:
 
     def __init__(self):
         self.selected = 0
+        self.cycle_colors = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
 
         def _PlayGame():
             global game_card
@@ -419,15 +420,17 @@ class Menu:
             action()
 
     def draw(self):
-        pyxel.cls(0)
-        pyxel.text(56 - 16, 8, "Consumer", 8, _SPLEEN_16x32)
-        pyxel.text(56 + 16, 40, "Consumer", 8, _SPLEEN_16x32)
+        pyxel.cls(pyxel.COLOR_BLACK)
+
+        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_RED, _SPLEEN_16x32)
+        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_RED, _SPLEEN_16x32)
 
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
-                text_centered(f"> {item_text} <", 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=(pyxel.frame_count // 3) % 16)
+                color = self.cycle_colors[(pyxel.frame_count // 3) % len(self.cycle_colors)]
+                text_centered(f"> {item_text} <", 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=color)
             else:
-                text_centered(item_text, 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=8)
+                text_centered(item_text, 128 + (16 + 8) * i, font=_SPLEEN_8x16, color=pyxel.COLOR_RED)
 
 
 class Dispatcher:
