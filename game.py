@@ -400,6 +400,7 @@ class Game:
         self.invaders = []
         self.background = Background()
         self.adjust_camera_altitude = adjust_camera_altitude
+        self.camera_altitude = 0
 
     def update(self):
         self.background.update()
@@ -412,12 +413,15 @@ class Game:
 
     def draw(self):
         pyxel.camera(0, 0)
-        if self.player.y < 40 and self.adjust_camera_altitude:
-            camera_altitude = 40 - self.player.y
+        if self.adjust_camera_altitude:
+            if self.player.y + self.camera_altitude < 40:
+                self.camera_altitude = 40 - self.player.y
+            if self.player.y + self.camera_altitude > SCREEN_HEIGHT - 40:
+                self.camera_altitude = max(0, SCREEN_HEIGHT - 40 - self.player.y)
         else:
             camera_altitude = 0
-        self.background.draw(camera_altitude)
-        pyxel.camera(0, -camera_altitude)
+        self.background.draw(self.camera_altitude)
+        pyxel.camera(0, -self.camera_altitude)
         for thing in sorted(self.city.blocks + self.invaders, key=lambda b: (b.y, b.z)):
             thing.draw()
         if self.player.carrying:
