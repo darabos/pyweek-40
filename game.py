@@ -19,12 +19,12 @@ _SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
 _SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 
-class Direction(enum.IntEnum):
+class Direction(enum.IntFlag):
     NONE = 0
-    UP = 1
-    DOWN = 2
-    LEFT = 3
-    RIGHT = 4
+    UP = enum.auto()
+    DOWN = enum.auto()
+    LEFT = enum.auto()
+    RIGHT = enum.auto()
 
 
 @dataclass
@@ -47,30 +47,31 @@ class Player:
         pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
     def handle_keypress(self) -> Direction:
+        direction = Direction.NONE.value
         if pyxel.btn(pyxel.KEY_UP):
-            return Direction.UP.value
+            direction |= Direction.UP.value
         if pyxel.btn(pyxel.KEY_DOWN):
-            return Direction.DOWN.value
+            direction |= Direction.DOWN.value
         if pyxel.btn(pyxel.KEY_LEFT):
-            return Direction.LEFT.value
+            direction |= Direction.LEFT.value
         if pyxel.btn(pyxel.KEY_RIGHT):
-            return Direction.RIGHT.value
-        return Direction.NONE.value
+            direction |= Direction.RIGHT.value
+        return direction
 
     def update(self):
         ACCELERATION = 1.0
         GRAVITY = 0.0
         DRAG = 0.08
 
-        match self.handle_keypress():
-            case Direction.LEFT.value:
-                self.vx -= ACCELERATION
-            case Direction.RIGHT.value:
-                self.vx += ACCELERATION
-            case Direction.UP.value:
-                self.vy -= ACCELERATION
-            case Direction.DOWN.value:
-                self.vy += ACCELERATION
+        direction = self.handle_keypress()
+        if direction & Direction.LEFT.value:
+            self.vx -= ACCELERATION
+        if direction & Direction.RIGHT.value:
+            self.vx += ACCELERATION
+        if direction & Direction.UP.value:
+            self.vy -= ACCELERATION
+        if direction & Direction.DOWN.value:
+            self.vy += ACCELERATION
 
         self.vy += GRAVITY
         self.x += self.vx
