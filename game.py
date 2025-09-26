@@ -396,7 +396,7 @@ class Game:
 
     def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, adjust_camera_altitude: bool = True):
         self.player = player_factory(self)
-        self.city = City.load(cx=16, cy=0, max_height=5, stepx=12, stepy=14, y_offset_base=city_y_offset_base)
+        self.city = City.load(cx=16, cy=0, max_height=5, stepx=14, stepy=14, y_offset_base=city_y_offset_base)
         self.invaders = []
         self.background = Background()
         self.adjust_camera_altitude = adjust_camera_altitude
