@@ -351,11 +351,19 @@ def tilemap_to_pathmap(cx: int, cy: int, tilemap: pyxel.Tilemap):
 
 
 class Background:
+
     def __init__(self):
-        pass
+        self.planet_x = -32
+        self.randomize_planet_y()
 
     def update(self):
-        pass
+        self.planet_x += 0.75
+        if self.planet_x > pyxel.width + 32:
+            self.planet_x = -32
+            self.randomize_planet_y()
+
+    def randomize_planet_y(self):
+        self.planet_y = random.randint(-200, -100)
 
     def draw(self, altitude):
         ground_sky_line = 40 + altitude + 48 - 1
@@ -387,7 +395,8 @@ class Background:
             clip_blt(x * 16, 30 + altitude * 0.7, 48, 0, 16, 48)
         for x in range(15):
             clip_blt(x * 16, -20 + altitude * 0.7, 64, 0, 16, 48, colkey=None)
-        pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)
+        pyxel.blt(self.planet_x, self.planet_y + altitude * 0.9, 1, 96, 16, 16, 16, colkey=pyxel.COLOR_BLACK)  # ringed planet
+        pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)  # moon
         clip_blt(160, 64 + altitude * 0.75, 16, 144, 88, 56)
         clip_blt(0, 56 + altitude * 0.9, 0, 104, pyxel.width, 40)
         pyxel.blt(0, 40 + altitude, 1, 0, 48, pyxel.width, 48, colkey=0)
