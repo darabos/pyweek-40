@@ -106,11 +106,11 @@ class Player:
         if pyxel.btnp(pyxel.KEY_SPACE):
             if self.carrying:
                 drop_spot = self.game.city.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 18, self.carrying)
-                if drop_spot is None:
+                if drop_spot is None or not drop_spot[3]:
                     # TODO: failed drop sound effect
                     pass
                 else:
-                    col, row, altitude = drop_spot
+                    col, row, altitude, valid = drop_spot
                     self.game.city.add(col, row, self.carrying)
                     self.carrying = None
                     pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
@@ -416,7 +416,7 @@ class City:
                 valid = self.valid_drop_spot(col, row, altitude, block)
                 if (valid and not closest_is_valid) or (dist <= closest_dist and valid == closest_is_valid):
                     closest_is_valid = valid
-                    closest = col, row, altitude
+                    closest = col, row, altitude, closest_is_valid
                     closest_dist = dist
         return closest
 
@@ -661,7 +661,7 @@ class Game:
                 self.player.y + self.player.height / 2 + 18,
                 self.player.carrying)
             if drop_spot is not None:
-                col, row, altitude = drop_spot
+                col, row, altitude, valid = drop_spot
                 self.draw_drop_indicator(col, row, altitude, self.player.carrying)
         else:
             cb = self.city.closest_block(
