@@ -12,9 +12,9 @@ pyxel.load("assets/art.pyxres")
 
 
 # Bitmap font definitions
-_SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
-_SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
-_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
+_FONT_SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
+_FONT_SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
+_FONT_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 
 # Sound channel definitions
@@ -499,15 +499,15 @@ class Menu:
     def draw(self):
         self.background_game.draw()
 
-        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_WHITE, _SPLEEN_16x32)
-        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_WHITE, _SPLEEN_16x32)
+        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
+        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
 
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
                 color = self.cycle_colors[(pyxel.frame_count // 3) % len(self.cycle_colors)]
-                text_centered(f"> {item_text} <", 96 + (16 + 8) * i, font=_SPLEEN_8x16, color=color)
+                text_centered(f"> {item_text} <", 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=color)
             else:
-                text_centered(item_text, 96 + (16 + 8) * i, font=_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                text_centered(item_text, 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
 
 
 class Dispatcher:
