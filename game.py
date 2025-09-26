@@ -10,9 +10,19 @@ from collections.abc import Callable
 pyxel.init(240, 320)
 pyxel.load("assets/art.pyxres")
 
+
+# Bitmap font definitions
 _SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
 _SPLEEN_16x32 = pyxel.Font("assets/spleen-16x32.bdf")
 _SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
+
+
+# Sound channel definitions
+_CHANNEL_SFX = 3
+
+# Sound bank definitions
+_SOUND_PICK_UP = 0
+_SOUND_DROP = 1
 
 
 class Direction(enum.IntFlag):
@@ -100,12 +110,14 @@ class Player:
                 b.above = nb
                 self.game.city.blocks.append(nb)
                 self.carrying = None
+                pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
             else:
                 b = self.game.closest_block(self.x, self.y + 10, grab=True)
                 self.game.city.blocks.remove(b)
                 if b.below:
                     b.below.above = None
                 self.carrying = b.sprite
+                pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
 
 
 @dataclass
