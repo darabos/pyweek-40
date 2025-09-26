@@ -3,11 +3,12 @@ import math
 import random
 import pyxel
 import threading
+import textwrap
 from dataclasses import dataclass
 from collections.abc import Callable
 
 
-pyxel.init(240, 320)
+pyxel.init(240, 320, quit_key=pyxel.KEY_NONE)
 pyxel.load("assets/art.pyxres")
 
 
@@ -413,6 +414,10 @@ class Game:
         self.camera_altitude = 0
 
     def update(self):
+        if pyxel.btnp(pyxel.KEY_ESCAPE):
+            global game_card
+            game_card.active = Menu()
+
         self.background.update()
         self.player.update()
         for invader in self.invaders:
@@ -458,10 +463,45 @@ class Game:
 
 
 
+def text_width(text: str, font: pyxel.Font):
+    """Because pyxel.Font's `text_width` doesn't handle newlines."""
+    width = 0
+    for line in text.splitlines():
+        width = max(width, font.text_width(line))
+    return width
+
+
 def text_centered(text: str, y: int, *, font: pyxel.Font, color: int):
     x = pyxel.width // 2
-    dx = font.text_width(text) // 2
+    dx = text_width(text, font) // 2
     pyxel.text(x - dx, y, text, color, font)
+
+
+class Credits:
+
+    TEXT = textwrap.dedent("""\
+        Consumer
+          Consumer
+
+    Brought to you by:
+
+    Alexander Malmberg
+    Daniele Cocca
+    Dániel Darabos
+    """)
+
+    def __init__(self):
+        self.y = pyxel.height // 3
+
+    def update(self):
+        if pyxel.btnp(pyxel.KEY_ESCAPE):
+            global game_card
+            game_card.active = Menu()
+
+    def draw(self):
+        pyxel.cls(pyxel.COLOR_BLACK)
+        text_centered(self.TEXT, self.y, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_RED)
+        self.y -= 0.5
 
 
 class Menu:
@@ -479,15 +519,19 @@ class Menu:
             global game_card
             game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
 
+        def _ShowCredits():
+            global game_card
+            game_card.active = Credits()
+
         self.menu_items = (
             ("Play Game", _PlayGame),
-            ("Settings", lambda: None),
+            ("Credits", _ShowCredits),
             ("Quit", lambda: pyxel.quit()),
         )
 
     def update(self):
-        self.background_game.update()
-
+        if pyxel.btnp(pyxel.KEY_ESCAPE):
+            pyxel.quit()
         if pyxel.btnp(pyxel.KEY_DOWN):
             self.selected = min(self.selected + 1, len(self.menu_items) - 1)
         if pyxel.btnp(pyxel.KEY_UP):
@@ -495,6 +539,8 @@ class Menu:
         if pyxel.btnp(pyxel.KEY_RETURN):
             _, action = self.menu_items[self.selected]
             action()
+
+        self.background_game.update()
 
     def draw(self):
         self.background_game.draw()
