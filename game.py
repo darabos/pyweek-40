@@ -416,7 +416,7 @@ class Game:
             if self.player.y + self.camera_altitude > pyxel.height - 40:
                 self.camera_altitude = max(0, pyxel.height - 40 - self.player.y)
         else:
-            camera_altitude = 0
+            self.camera_altitude = 0
         self.background.draw(self.camera_altitude)
         pyxel.camera(0, -self.camera_altitude)
         for thing in sorted(self.city.blocks + self.invaders, key=lambda b: (b.y, b.z)):
