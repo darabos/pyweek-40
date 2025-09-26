@@ -144,9 +144,8 @@ class Invader:
     dead: bool = False
 
     def draw(self):
-        col = 7
-        pyxel.pset(self.prev_x, self.prev_y - self.prev_z, col=col)
-        pyxel.pset(self.x, self.y - self.z, col=col)
+        pyxel.pset(self.prev_x, self.prev_y - self.prev_z, col=pyxel.COLOR_WHITE)
+        pyxel.pset(self.x, self.y - self.z, col=pyxel.COLOR_WHITE)
 
     def update(self):
         self.prev_x = self.x
