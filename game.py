@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from collections.abc import Callable
 
 
-pyxel.init(240, 320)
+SCREEN_WIDTH = 240
+SCREEN_HEIGHT = 320
+
+
+pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT)
 pyxel.load("assets/art.pyxres")
 
 _SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
@@ -350,20 +354,20 @@ class Background:
             y = int(y)
             h = min(h, ground_sky_line - y)
             pyxel.blt(x, y, 1, u, v, w, h, colkey=colkey)
-        if dark_sky_line >= 320:
+        if dark_sky_line >= SCREEN_HEIGHT:
             pyxel.cls(0)
         else:
             pyxel.cls(1)
             if sky_space_line > 0:
-                pyxel.rect(0, 0, 240, sky_space_line, 0)
-                pyxel.rect(0, sky_space_line, 240, dark_sky_line - sky_space_line, 5)
-                pyxel.rect(0, dark_sky_line, 240, ground_sky_line - dark_sky_line, 6)
+                pyxel.rect(0, 0, SCREEN_WIDTH, sky_space_line, 0)
+                pyxel.rect(0, sky_space_line, SCREEN_WIDTH, dark_sky_line - sky_space_line, 5)
+                pyxel.rect(0, dark_sky_line, SCREEN_WIDTH, ground_sky_line - dark_sky_line, 6)
                 pass
             elif dark_sky_line > 0:
-                pyxel.rect(0, 0, 240, dark_sky_line, 5)
-                pyxel.rect(0, dark_sky_line, 240, ground_sky_line - dark_sky_line, 6)
+                pyxel.rect(0, 0, SCREEN_WIDTH, dark_sky_line, 5)
+                pyxel.rect(0, dark_sky_line, SCREEN_WIDTH, ground_sky_line - dark_sky_line, 6)
             else:
-                pyxel.rect(0, 0, 240, ground_sky_line, 6)
+                pyxel.rect(0, 0, SCREEN_WIDTH, ground_sky_line, 6)
         clip_blt(0, 80 + altitude * 0.7, 24, 0, 32, 48)
         clip_blt(24, 80 + altitude * 0.7, 16, 0, -24, 48)
         for x in range(3, 15):
@@ -374,8 +378,8 @@ class Background:
             clip_blt(x * 16, -20 + altitude * 0.7, 64, 0, 16, 48, colkey=None)
         pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)
         clip_blt(160, 64 + altitude * 0.75, 16, 144, 88, 56)
-        clip_blt(0, 56 + altitude * 0.9, 0, 104, 240, 40)
-        pyxel.blt(0, 40 + altitude, 1, 0, 48, 240, 48, colkey=0)
+        clip_blt(0, 56 + altitude * 0.9, 0, 104, SCREEN_WIDTH, 40)
+        pyxel.blt(0, 40 + altitude, 1, 0, 48, SCREEN_WIDTH, 48, colkey=0)
 
 
 def make_invader(city: City):
