@@ -803,7 +803,13 @@ class NewBlockArea:
                    self.border * 2 + self.block_width * self.num,
                    self.border * 2 + self.height,
                    pyxel.COLOR_BLACK)
-        # TODO: draw a border for the pick-up area
+        pyxel.dither(1.0)
+        for b in range(self.border // 2 + 1):
+            pyxel.rectb(self.x_origin - b, self.y_origin - b,
+                        b * 2 + self.border * 2 + self.block_width * self.num,
+                        b * 2 + self.border * 2 + self.height,
+                        pyxel.COLOR_GRAY)
+        pyxel.dither(0.5)
         if self.carried_idx is not None:
             pyxel.rect(self.x_origin + self.border + self.block_width * self.carried_idx + 1,
                        self.y_origin + self.border + 1,
