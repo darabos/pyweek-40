@@ -37,10 +37,10 @@ _SOUND_FAILED_PICK_UP = 3
 _CYCLE_COLORS = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
 
 
-def AssertButNotInRelease():
+def AssertButNotInRelease(text='Something unexpected happened.'):
     if _RELEASE_MODE:
         return
-    assert False, 'Something unexpected happened.'
+    assert False, text
 
 
 class Direction(enum.IntFlag):
@@ -589,7 +589,10 @@ class City:
         return score - self.base_score
 
     @staticmethod
-    def load(cx: int, cy: int, max_height: int, *, y_offset_base: int):
+    def load(cx: int, cy: int, max_height: int, buildings, *, y_offset_base: int):
+        for b in buildings:
+            if b > max_height:
+              AssertButNotInRelease("height higher than max_height: %d > %d" % (b, max_height) )
         tiles = [[None] * 16 for _ in range(16)]
         tilemap = pyxel.tilemaps[0]
         xs = []
@@ -606,28 +609,48 @@ class City:
                 tile = tilemap.pget(cx + col, cy + row)
                 if tile == (0, 0):
                     continue
-                height = int(max_height * random.random() ** 4)
                 x, y = City.base_tile_to_screen(col, row, -1)
                 x += x_off
                 y += y_off
                 match tile:
+                    # blue tile
                     case (0, 1):
                         base = FoundationSprite(x, y, sprite=(3, 0))
                         sprites = NormalBlocks
                         buildable = True
+                        rando = random.random()
+                        ## progressively increase the
+                        if ((len(buildings) > 0)
+                            and ((row < 10 and rando < 0.25)
+                            or (row == 8 and rando < 0.30)
+                            or (row == 9 and rando < 0.55)
+                            or (row == 10 and rando < 0.65)
+                            or (row == 11 and rando < 0.75)
+                            or (row == 12))
+                           ):
+                            # height = int(max_height * random.random() ** 4)
+                            bldi = random.randint(0, len(buildings)-1)
+                            height = buildings.pop(bldi)
+                        else:
+                            height = 0
+                    # red tile
                     case (3, 1):
                         base = FoundationSprite(x, y, sprite=(3, 0))
                         height = 7
                         sprites = RedBlocks
                         buildable = True
+                    # road vertical
                     case (1, 1):
                         base = Road(x, y, sprite=(3, 3))
                         height = 0
                         buildable = False
+                    # road horizontal
                     case (1, 0):
                         base = Road(x, y, sprite=(3, 3), flipped=True)
                         height = 0
                         buildable = False
+                    case _:
+                        AssertButNotInRelease("This should not happen! city initial tilemap has undefined stuff: " + tile)
                 tile = Tile(base)
                 tiles[row][col] = tile
                 if buildable:
@@ -876,7 +899,9 @@ class Game:
     def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False, time_limit: int = 30):
         self.player = player_factory(self)
         self.invaders = []
-        self.city = City.load(cx=16, cy=0, max_height=5, y_offset_base=city_y_offset_base)
+        # a set of starting heights, pick them at random.
+        buildings = [5] + 3*[4] + 3*[3] + 3*[2] + 2*[1]
+        self.city = City.load(cx=16, cy=0, max_height=5, buildings=buildings, y_offset_base=city_y_offset_base)
         self.background = Background()
         self.demo_mode = demo_mode
         self.time_limit = time_limit
