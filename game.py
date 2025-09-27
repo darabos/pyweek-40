@@ -942,7 +942,10 @@ class Game:
         self.background.draw(self.camera_altitude)
 
         if self.state != Game.State.PLAY:
+            pyxel.camera(0, -self.camera_altitude)
             self.city.draw()
+            pyxel.camera(0, 0)
+
             pyxel.dither(1 - 0.25 * (self.state - 1))
             pyxel.rect(0, 0, pyxel.width, pyxel.height, pyxel.COLOR_BLACK)
             pyxel.dither(1.0)
