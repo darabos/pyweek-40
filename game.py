@@ -22,6 +22,7 @@ _FONT_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 # Features.
 _ENABLE_INVADERS = False
+_RELEASE_MODE = True
 
 # Sound channel definitions
 _CHANNEL_SFX = 3
@@ -31,6 +32,12 @@ _SOUND_DROP = 0
 _SOUND_PICK_UP = 1
 _SOUND_FAILED_DROP = 2
 _SOUND_FAILED_PICK_UP = 3
+
+
+def AssertButNotInRelease():
+    if _RELEASE_MODE:
+        return
+    assert False, 'Something unexpected happened.'
 
 
 class Direction(enum.IntFlag):
@@ -53,6 +60,7 @@ class Player:
     direction: Direction = Direction.NONE.value
     maximum_altitude: int = 0
     carrying: "Block | None" = None
+    carrying_new: bool = False
 
     def draw(self):
         if self.carrying:
@@ -108,22 +116,29 @@ class Player:
             self.vx = 0
         if pyxel.btnp(pyxel.KEY_SPACE):
             if self.carrying:
-                drop_spot = self.game.city.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 18, self.carrying)
-                if drop_spot is None or not drop_spot[3]:
+                drop_spot = self.game.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 18, self.carrying)
+                if drop_spot is None or not drop_spot.valid:
                     pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_DROP)
                 else:
-                    col, row, altitude, valid = drop_spot
-                    self.game.city.add(col, row, self.carrying)
-                    self.maximum_altitude = max(self.maximum_altitude, 50 - self.carrying.y)
+                    if isinstance(drop_spot, DropInCity):
+                        self.game.city.add(drop_spot.col, drop_spot.row, self.carrying)
+                        self.maximum_altitude = max(self.maximum_altitude, 50 - self.carrying.y)
+                        if self.carrying_new:
+                            self.game.new_block_area.placed()
+                    elif isinstance(drop_spot, DropInNewArea):
+                        self.game.new_block_area.returned_block()
+                    else:
+                        AssertButNotInRelease()
                     self.carrying = None
                     pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
             else:
-                b, is_new = self.game.closest_block(self.x + self.width / 2, self.y + self.height / 2 + 10)
+                b, is_new = self.game.closest_pickup_spot(self.x + self.width / 2, self.y + self.height / 2 + 10)
                 if b:
                     if is_new or self.game.city.remove(b):
                         if is_new:
                             self.game.new_block_area.picked_up(b)
                         self.carrying = b
+                        self.carrying_new = is_new
                         pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
                     else:
                         pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_PICK_UP)
@@ -424,28 +439,6 @@ class City:
                 return False
         return True
 
-    def closest_drop_spot(self, x: float, y: float, block: Block):
-        closest = None
-        closest_dist = max_dist = 40
-        closest_is_valid = False
-        for row, tile_col in enumerate(self.tiles):
-            for col, tile in enumerate(tile_col):
-                if not tile or tile.blocks is None:
-                    continue
-                altitude = len(tile.blocks)
-                top_x, top_y = self.tile_to_screen(col, row, altitude)
-                dx = top_x + 8 - x
-                dy = top_y + 8 - y
-                dist = math.hypot(dx, dy)
-                if dist > max_dist:
-                    continue
-                valid = self.valid_drop_spot(col, row, altitude, block)
-                if (valid and not closest_is_valid) or (dist <= closest_dist and valid == closest_is_valid):
-                    closest_is_valid = valid
-                    closest = col, row, altitude, closest_is_valid
-                    closest_dist = dist
-        return closest
-
     def score(self):
         score = 0
         for tile_col in self.tiles:
@@ -654,6 +647,8 @@ def make_invader(city: City):
 class NewBlockArea:
     blocks: list[Block] = field(default_factory=list)
 
+    carried_idx: int | None = None
+
     num: int = 4
     x_origin: int = 56
     y_origin: int = 35
@@ -661,18 +656,38 @@ class NewBlockArea:
     height: int = 32
     border: int = 2
 
+    def coords_for_idx(self, idx, camera_altitude, center=False):
+        x = self.x_origin + self.border + self.block_width * idx
+        y = self.y_origin + self.border - camera_altitude
+        if center:
+            x += self.block_width // 2
+            y += self.height // 2
+        return x, y
+
     def update(self, camera_altitude):
         while len(self.blocks) < self.num:
             self.blocks.append(None)
         for idx in range(len(self.blocks)):
+            if idx == self.carried_idx:
+                continue
+            x, y = self.coords_for_idx(idx, camera_altitude)
             if self.blocks[idx] is None:
-                self.blocks[idx] = Block(self.x_origin + self.border + self.block_width * idx, 0, None, None, None, random.choice(AllBlocks))
-            self.blocks[idx].y = self.y_origin + self.border - camera_altitude
+                self.blocks[idx] = Block(x, y, None, None, None, random.choice(AllBlocks))
+            self.blocks[idx].x = x
+            self.blocks[idx].y = y
 
     def picked_up(self, block):
         for idx in range(len(self.blocks)):
             if self.blocks[idx] is block:
-                self.blocks[idx] = None
+                self.carried_idx = idx
+                break
+
+    def placed(self):
+        self.blocks[self.carried_idx] = None
+        self.carried_idx = None
+
+    def returned_block(self):
+        self.carried_idx = None
 
     def draw(self, camera_altitude):
         pyxel.camera(0, 0)
@@ -682,11 +697,35 @@ class NewBlockArea:
                    self.border * 2 + self.height,
                    pyxel.COLOR_BLACK)
         # TODO: draw a border for the pick-up area
+        if self.carried_idx is not None:
+            pyxel.rect(self.x_origin + self.border + self.block_width * self.carried_idx + 1,
+                       self.y_origin + self.border + 1,
+                       self.block_width - 2,
+                       self.height - 2,
+                       9)
         pyxel.dither(1.0)
         pyxel.camera(0, -camera_altitude)
-        for b in self.blocks:
+        for idx, b in enumerate(self.blocks):
+            if idx == self.carried_idx:
+                continue
             if b:
                 b.draw()
+
+
+@dataclass(frozen=True)
+class DropSpot:
+    valid: bool
+
+@dataclass(frozen=True)
+class DropInCity(DropSpot):
+    col: int
+    row: int
+    altitude: int
+
+@dataclass(frozen=True)
+class DropInNewArea(DropSpot):
+    x: int
+    y: int
 
 
 class Game:
@@ -744,22 +783,21 @@ class Game:
             self.new_block_area.draw(self.camera_altitude)
             pyxel.camera(0, -self.camera_altitude)
         if self.player.carrying:
-            drop_spot = self.city.closest_drop_spot(
+            drop_spot = self.closest_drop_spot(
                 self.player.x + self.player.width / 2,
                 self.player.y + self.player.height / 2 + 18,
                 self.player.carrying)
             if drop_spot is not None:
-                col, row, altitude, valid = drop_spot
-                self.draw_drop_indicator(col, row, altitude, self.player.carrying)
+                self.draw_drop_indicator(drop_spot, self.player.carrying)
         else:
-            cb, is_new = self.closest_block(
+            cb, is_new = self.closest_pickup_spot(
                 self.player.x + self.player.width / 2,
                 self.player.y + self.player.height / 2 + 10)
             if cb:
                 self.draw_pickup_indicator(cb, is_new)
         self.player.draw()
 
-    def closest_block(self, x: float, y: float):
+    def closest_pickup_spot(self, x: float, y: float):
         closest = None
         closest_is_new = None
         closest_dist = 40
@@ -787,29 +825,70 @@ class Game:
                     closest_is_new = True
         return closest, closest_is_new
 
-    def draw_drop_indicator(self, base_col, base_row, base_altitude, block):
+    def closest_drop_spot(self, x: float, y: float, block: Block):
+        closest = None
+        closest_dist = max_dist = 40
+        closest_is_valid = False
+        for row, tile_col in enumerate(self.city.tiles):
+            for col, tile in enumerate(tile_col):
+                if not tile or tile.blocks is None:
+                    continue
+                altitude = len(tile.blocks)
+                top_x, top_y = self.city.tile_to_screen(col, row, altitude)
+                dx = top_x + 8 - x
+                dy = top_y + 8 - y
+                dist = math.hypot(dx, dy)
+                if dist > max_dist:
+                    continue
+                valid = self.city.valid_drop_spot(col, row, altitude, block)
+                if (valid and not closest_is_valid) or (dist <= closest_dist and valid == closest_is_valid):
+                    closest_is_valid = valid
+                    closest = DropInCity(closest_is_valid, col, row, altitude)
+                    closest_dist = dist
+        if self.new_block_area and self.new_block_area.carried_idx is not None:
+            bx, by = self.new_block_area.coords_for_idx(self.new_block_area.carried_idx, self.camera_altitude, center=True)
+            dx = bx - x
+            dy = by - y
+            dist = math.hypot(dx, dy)
+            if dist < closest_dist:
+                closest_is_valid = True
+                closest = DropInNewArea(True, *self.new_block_area.coords_for_idx(self.new_block_area.carried_idx, self.camera_altitude))
+                closest_dist = dist
+        return closest
+
+    def draw_drop_indicator(self, drop_spot, block):
         # TODO: this has an annoying amount of duplication with valid_drop_spot.
         bt = block.blocktype
-        for part in bt.footprint:
-            col = part.col + base_col
-            row = part.row + base_row
-            altitude = part.altitude + base_altitude
-            valid = True
-            if row < 0 or row >= len(self.city.tiles):
-                valid = False
-            elif col < 0 or col >= len(self.city.tiles[0]):
-                valid = False
-            else:
-                tile = self.city.tiles[row][col]
-                if tile is None or tile.blocks is None:
+        if isinstance(drop_spot, DropInCity):
+            for part in bt.footprint:
+                col = part.col + drop_spot.col
+                row = part.row + drop_spot.row
+                altitude = part.altitude + drop_spot.altitude
+                valid = True
+                if row < 0 or row >= len(self.city.tiles):
                     valid = False
-                elif altitude != len(tile.blocks):
+                elif col < 0 or col >= len(self.city.tiles[0]):
                     valid = False
-            if valid:
-                outline_block(*self.city.tile_to_screen(col, row, altitude))
-            else:
-                outline_block(*self.city.tile_to_screen(col, row, altitude),
-                              color=8)
+                else:
+                    tile = self.city.tiles[row][col]
+                    if tile is None or tile.blocks is None:
+                        valid = False
+                    elif altitude != len(tile.blocks):
+                        valid = False
+                if valid:
+                    outline_block(*self.city.tile_to_screen(col, row, altitude))
+                else:
+                    outline_block(*self.city.tile_to_screen(col, row, altitude),
+                                  color=8)
+        elif isinstance(drop_spot, DropInNewArea):
+            for part in bt.footprint:
+                x, y = drop_spot.x, drop_spot.y
+                dx, dy = City.base_tile_to_screen(part.col, part.row, part.altitude)
+                x += dx
+                y += dy
+                outline_block(x, y)
+        else:
+            AssertButNotInRelease()
 
     def draw_pickup_indicator(self, block, is_new):
         bt = block.blocktype
