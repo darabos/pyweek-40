@@ -194,6 +194,18 @@ class BlockType:
     # Sequence of tiles occupied.
     footprint: tuple[BlockPart, ...]
 
+    def __post_init__(self):
+        xs = []
+        ys = []
+        for part in self.footprint:
+            for sprite in part.sprites:
+                xs.append(sprite.x)
+                xs.append(sprite.x + sprite.w)
+                ys.append(sprite.y)
+                ys.append(sprite.y + sprite.h)
+        object.__setattr__(self, 'x_center', 0.5 * (min(xs) + max(xs)))
+        object.__setattr__(self, 'y_center', 0.5 * (min(ys) + max(ys)))
+
 
 def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
     blocktypes = []
@@ -751,6 +763,8 @@ def make_invader(city: City):
 class NewBlockArea:
     blocks: list[Block]
 
+    carried_src_x: int
+    carried_src_y: int
     carried_idx: int | None = None
 
     num: int = 4
@@ -780,13 +794,17 @@ class NewBlockArea:
             x, y = self.coords_for_idx(idx, camera_altitude)
             if self.blocks[idx] is None:
                 self.blocks[idx] = Block(x, y, None, None, None, random.choice(AllBlocks))
-            self.blocks[idx].x = x
-            self.blocks[idx].y = y
+            x_center = self.blocks[idx].blocktype.x_center
+            y_center = self.blocks[idx].blocktype.y_center
+            self.blocks[idx].x = x + self.block_width // 2 - x_center
+            self.blocks[idx].y = y + self.height // 2 - y_center
 
     def picked_up(self, block):
         for idx in range(len(self.blocks)):
             if self.blocks[idx] is block:
                 self.carried_idx = idx
+                self.carried_src_x = block.x
+                self.carried_src_y = block.y
                 break
 
     def placed(self):
@@ -991,9 +1009,8 @@ class Game:
                     closest_is_new = False
         if self.new_block_area:
             for b in self.new_block_area.blocks:
-                # TODO: use proper center of block
-                dx = b.x + 8 - x
-                dy = b.y + 8 - y
+                dx = b.x + b.blocktype.x_center - x
+                dy = b.y + b.blocktype.y_center - y
                 dist = math.hypot(dx, dy)
                 if dist <= closest_dist:
                     closest = b
@@ -1028,7 +1045,9 @@ class Game:
             dist = math.hypot(dx, dy)
             if dist < closest_dist:
                 closest_is_valid = True
-                closest = DropInNewArea(True, *self.new_block_area.coords_for_idx(self.new_block_area.carried_idx, self.camera_altitude))
+                x = self.new_block_area.carried_src_x
+                y = self.new_block_area.carried_src_y
+                closest = DropInNewArea(True, x, y)
                 closest_dist = dist
         return closest
 
