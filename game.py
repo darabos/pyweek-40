@@ -125,7 +125,7 @@ class Player:
                 else:
                     if isinstance(drop_spot, DropInCity):
                         self.game.city.add(drop_spot.col, drop_spot.row, self.carrying)
-                        self.maximum_altitude = max(self.maximum_altitude, 50 - self.carrying.y)
+                        self.maximum_altitude = max(self.maximum_altitude, 80 - self.carrying.y)
                         if self.carrying_new:
                             self.game.new_block_area.placed()
                     elif isinstance(drop_spot, DropInNewArea):
@@ -1179,7 +1179,7 @@ class ScoreScreen:
         self.camera_altitude = camera_altitude
         self.camera_direction = -1
         self.camera_move_delay = 0
-        self.maximum_altitude = max(0, self.city.highest_building() * 8 - 120)
+        self.maximum_altitude = max(0, self.city.highest_building() * 8 - 160)
 
         self.score_table = [
             ('Grandmaster', 5000, False),
