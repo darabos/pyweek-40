@@ -259,8 +259,8 @@ Skybridges = (
     +
     MakeSkybridgesLeft(0, 16, 8, 168, 104, 3))
 
-def MakeSkyrampsRight(base_x, base_y, base_num,
-                      bridge_x, bridge_y, bridge_num):
+def MakeSkyrampsRightUp(base_x, base_y, base_num,
+                        bridge_x, bridge_y, bridge_num):
     bts = []
     for bridge_idx in range(bridge_num):
         for _ in range(4):
@@ -277,6 +277,26 @@ def MakeSkyrampsRight(base_x, base_y, base_num,
                         BlockSprite(14 + 8, -15, base_x + 8, base_y + righter * 16, 8, 16),
                         BlockSprite(14 - 4, -15, bridge_x, bridge_y + bridge_idx * 32, 12, 25)),
                                      col=-1, row=0, altitude=1))))
+    return bts
+def MakeSkyrampsRightDown(base_x, base_y, base_num,
+                        bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            righter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + righter * 16, 16, 16), ),
+                                     col=0, row=0, altitude=0),
+                    BlockPart(sprites=(
+                        BlockSprite(-14, -1, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(-6, -1, base_x + 8, base_y + left * 16, 8, 16),
+                        BlockSprite(0, 4, bridge_x, bridge_y + bridge_idx * 16, 8, 16)),
+                              col=1, row=0, altitude=1),
+                       )))
     return bts
 def MakeSkyrampsLeft(base_x, base_y, base_num,
                      bridge_x, bridge_y, bridge_num):
@@ -298,9 +318,12 @@ def MakeSkyrampsLeft(base_x, base_y, base_num,
                                      col=0, row=-1, altitude=1))))
     return bts
 Skyramps = (
-    MakeSkyrampsRight(0, 16, 8, 194, 33, 2)
+    MakeSkyrampsRightUp(0, 16, 8, 194, 33, 2)
     +
-    MakeSkyrampsLeft(0, 16, 8, 192, 112, 2))
+    MakeSkyrampsRightDown(0, 16, 8, 222, 9 + 16, 1)  # Hard to visually read the blank wall, so don't use that sprite.
+    +
+    MakeSkyrampsLeft(0, 16, 8, 192, 112, 2)
+    )
 AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 2
 
 
