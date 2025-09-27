@@ -22,7 +22,7 @@ _FONT_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 
 # Features.
 _ENABLE_INVADERS = False
-_RELEASE_MODE = True
+_RELEASE_MODE = False
 
 # Sound channel definitions
 _CHANNEL_SFX = 3
