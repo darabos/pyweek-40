@@ -67,8 +67,8 @@ class Player:
 
     def draw(self):
         if self.carrying:
-            self.carrying.x = self.x
-            self.carrying.y = self.y + 10
+            self.carrying.x = self.x + 8 - self.carrying.blocktype.x_center
+            self.carrying.y = self.y + 8 - self.carrying.blocktype.y_min // 2
             self.carrying.draw()
         pyxel.blt(self.x, self.y, 0, 32, 0, 16, 16, colkey=0)
 
@@ -205,6 +205,7 @@ class BlockType:
                 ys.append(sprite.y + sprite.h)
         object.__setattr__(self, 'x_center', (min(xs) + max(xs)) // 2)
         object.__setattr__(self, 'y_center', (min(ys) + max(ys)) // 2)
+        object.__setattr__(self, 'y_min', min(ys))
 
 
 def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
