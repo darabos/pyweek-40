@@ -459,6 +459,14 @@ class City:
                     closest_dist = dist
         return closest
 
+    def score(self):
+        score = 0
+        for tile_col in self.tiles:
+            for tile in tile_col:
+                if tile and tile.blocks:
+                    score += len(tile.blocks) * (len(tile.blocks) - 1) // 2
+        return score
+
     @staticmethod
     def load(cx: int, cy: int, max_height: int, *, y_offset_base: int):
         tiles = [[None] * 16 for _ in range(16)]
@@ -690,6 +698,11 @@ class Game:
         else:
             self.camera_altitude = 0
         self.background.draw(self.camera_altitude)
+
+        if self.adjust_camera_altitude:  # Hack to only draw the score when playing, not when in demo mode.
+            score = self.city.score()
+            pyxel.text(5, 5, 'Score: %i' % score, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
+
         pyxel.camera(0, -self.camera_altitude)
         for thing in sorted(self.invaders, key=lambda b: (b.y, b.z)):
             thing.draw()
