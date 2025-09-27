@@ -30,6 +30,7 @@ _CHANNEL_SFX = 3
 _SOUND_DROP = 0
 _SOUND_PICK_UP = 1
 _SOUND_FAILED_DROP = 2
+_SOUND_FAILED_PICK_UP = 3
 
 
 class Direction(enum.IntFlag):
@@ -125,8 +126,7 @@ class Player:
                         self.carrying = b
                         pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
                     else:
-                        # TODO: failed pick-up sound effect
-                        pass
+                        pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_PICK_UP)
 
 
 @dataclass
