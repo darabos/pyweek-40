@@ -1325,7 +1325,7 @@ class ScoreScreen:
 class Credits:
 
     TEXT = textwrap.dedent("""\
-      Constricter
+      Constrictor
         Constructor
 
     Brought to you by:
