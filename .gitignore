@@ -1,3 +1,7 @@
 /web-dist
 /pyweek-40.html
 /pyweek-40.pyxapp
+/.python-version
+/README.md
+/pyproject.toml
+/uv.lock
