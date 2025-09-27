@@ -916,7 +916,7 @@ class Game:
 
     camera_altitude: int = 0
 
-    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False, time_limit: int = 30):
+    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False, time_limit: int = 120):
         self.player = player_factory(self)
         self.invaders = []
         # a set of starting heights, pick them at random.
