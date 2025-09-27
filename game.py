@@ -209,7 +209,7 @@ def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
             blocktypes.append(bt)
     return blocktypes
 
-NormalBlocks = MakeBlocksFromHalves(0, 16, 8) + MakeBlocksFromHalves(0, 16 + 8 * 16, 2) + MakeBlocksFromHalves(0, 16 + 10 * 16, 2)
+NormalBlocks = MakeBlocksFromHalves(0, 16, 8) + MakeBlocksFromHalves(0, 16 + 8 * 16, 2) * 4 + MakeBlocksFromHalves(0, 16 + 10 * 16, 2) * 4
 RedBlocks = [
     BlockType(footprint=(
         BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
@@ -345,7 +345,7 @@ Skyramps = (
     +
     MakeSkyrampsLeftDown(0, 16, 8, 224, 67 + 16, 1)  # Hard to visually read the blank wall, so don't use that sprite.
     )
-AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps
+AllBlocks = NormalBlocks + RedBlocks * 4 + Skybridges + Skyramps
 
 
 @dataclass
