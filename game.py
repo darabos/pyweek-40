@@ -1269,16 +1269,35 @@ class Credits:
 
     def __init__(self):
         self.y = pyxel.height // 3
+        self.blocks = [self.Block0, self.Block1, self.Block2, self.Block3]
+        self.bld_l = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 7 / 16)))]
+        self.bld_r = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 5 / 16)))]
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_ESCAPE):
             global game_card
             game_card.active = Menu()
 
+    def Block0(self, x, y):
+        pyxel.blt(x, y, 0, 16, 16, 32, 32, colkey=0)
+    def Block1(self, x, y):
+        pyxel.blt(x, y, 0, 16, 48, 32, 32, colkey=0)
+    def Block2(self, x, y):
+        pyxel.blt(x, y, 0, 16, 80, 32, 32, colkey=0)
+    def Block3(self, x, y):
+        pyxel.blt(x, y, 0, 16, 112, 32, 32, colkey=0)
     def draw(self):
         pyxel.cls(pyxel.COLOR_BLACK)
         text_centered(self.TEXT, self.y, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_RED)
         self.y -= 0.5
+        start_l_x, start_l_y = 8, pyxel.height
+        start_r_x, start_r_y = pyxel.width-40, pyxel.height
+        for i, blk in enumerate(self.bld_l):
+            self.blocks[blk](start_l_x, start_l_y - (i * 16) )
+        for i, blk in enumerate(self.bld_r):
+            self.blocks[blk](start_r_x, start_r_y - (i * 16) )
+
+
 
 
 class Menu:
