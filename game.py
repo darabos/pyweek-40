@@ -429,6 +429,13 @@ def outline_block(x: float, y: float, color: int | None = None):
         pyxel.pal()
 
 
+def cross_block(x: float, y: float, color: int):
+    x0, y0 = x, y + 4
+    x1, y1 = x + 16, y + 16 - 4
+    pyxel.line(x0, y0, x1, y1, color)
+    pyxel.line(x1, y0, x0, y1, color)
+
+
 @dataclass
 class Foundation(abc.ABC):
     x: float
@@ -1109,6 +1116,7 @@ class Game:
                 else:
                     outline_block(*self.city.tile_to_screen(col, row, altitude),
                                   color=8)
+                    cross_block(*self.city.tile_to_screen(col, row, altitude), pyxel.COLOR_RED)
         elif isinstance(drop_spot, DropInNewArea):
             for part in bt.footprint:
                 x, y = drop_spot.x, drop_spot.y
@@ -1139,6 +1147,7 @@ class Game:
                 outline_block(x, y)
             else:
                 outline_block(x, y, color=8)
+                cross_block(*self.city.tile_to_screen(col, row, altitude), pyxel.COLOR_RED)
 
 
 def text_width(text: str, font: pyxel.Font):
