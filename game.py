@@ -207,7 +207,7 @@ class Invader:
         if dc == 0 and dr == 0:
             self.dead = True
             return
-        stepx, stepy = 12, 14
+        stepx, stepy = 16, 14
         s = 0.1 * random.random()
         self.x += (dr * stepx - dc * stepy) * s
         self.y += (dr * stepx // 2 + dc * stepy // 2) * s
@@ -315,7 +315,7 @@ class City:
     # Direction invaders want to go in each tile cell.
     pathmap: dict[tuple[int, int], tuple[int, int]]
 
-    stepx: int = 14
+    stepx: int = 16
     stepy: int = 14
     block_height: int = 8
 
@@ -498,7 +498,7 @@ class City:
 
         def screen_to_tile(sx: float, sy: float):
             tx = sx - x_off - 8
-            t2y = 2 * (sy - y_off + 8)
+            t2y = 2 * (sy - y_off - 8)
             col = (t2y - tx) // 2 // City.stepy
             row = (t2y + tx) // 2 // City.stepx
             return cx + col, cy + row
