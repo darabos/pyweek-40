@@ -595,6 +595,14 @@ class City:
                     score += len(tile.blocks) * (len(tile.blocks) - 1) // 2
         return score - self.base_score
 
+    def highest_building(self):
+        highest = 0
+        for tile_col in self.tiles:
+            for tile in tile_col:
+                if tile and tile.blocks:
+                    highest = max(highest, len(tile.blocks))
+        return highest
+
     @staticmethod
     def load(cx: int, cy: int, max_height: int, buildings, *, y_offset_base: int):
         for b in buildings:
@@ -1170,7 +1178,8 @@ class ScoreScreen:
         self.background = background
         self.camera_altitude = camera_altitude
         self.camera_direction = -1
-        self.maximum_altitude = 100  # TODO
+        self.camera_move_delay = 0
+        self.maximum_altitude = max(0, self.city.highest_building() * 8 - 120)
 
         self.score_table = [
             ('Grandmaster', 5000, False),
@@ -1190,9 +1199,33 @@ class ScoreScreen:
                            key=lambda x: -x[1])
 
     def update(self):
+        self.background.update()
+
         global game_card
         if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_SPACE):
             game_card.active = Menu()
+
+        if pyxel.btn(pyxel.KEY_UP):
+            self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
+            if self.camera_altitude + 3 < self.maximum_altitude:
+                self.camera_altitude += 3
+            elif self.camera_altitude < self.maximum_altitude:
+                self.camera_altitude = self.maximum_altitude
+        if pyxel.btn(pyxel.KEY_DOWN):
+            self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
+            self.camera_altitude -= 3
+            if self.camera_altitude < 0:
+                self.camera_altitude = 0
+
+        if pyxel.frame_count > self.camera_move_delay:
+            self.camera_altitude += self.camera_direction
+            if self.camera_altitude < 0:
+                self.camera_altitude = 0
+                self.camera_direction = 1
+            if self.camera_altitude > self.maximum_altitude:
+                if self.camera_direction > 0:
+                    self.camera_altitude = self.maximum_altitude
+                self.camera_direction = -1
 
     def draw(self):
         pyxel.camera(0, 0)
