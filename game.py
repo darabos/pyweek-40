@@ -782,7 +782,7 @@ class DropInNewArea(DropSpot):
 
 class Game:
 
-    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False):
+    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False, time_limit: int = 30):
         self.player = player_factory(self)
         self.invaders = []
         self.city = City.load(cx=16, cy=0, max_height=5, y_offset_base=city_y_offset_base)
@@ -791,13 +791,18 @@ class Game:
         self.camera_altitude = 0
         if not self.demo_mode:
             self.new_block_area = NewBlockArea()
+            self.deadline = pyxel.frame_count + time_limit * _GRAPHICS_FPS
         else:
             self.new_block_area = None
 
     def update(self):
-        if pyxel.btnp(pyxel.KEY_ESCAPE):
+        if not self.demo_mode:
             global game_card
-            game_card.active = Menu()
+            if pyxel.btnp(pyxel.KEY_ESCAPE):
+                game_card.active = Menu()
+            if pyxel.frame_count > self.deadline:
+                # TODO: high-score screen and enter your name etc.; overlaid on your city, and auto-scroll up and down, maybe?
+                game_card.active = Menu()
 
         self.background.update()
         self.player.update()
@@ -826,6 +831,8 @@ class Game:
         if not self.demo_mode:
             score = self.city.score()
             pyxel.text(5, 5, 'Score: %i' % score, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
+            time_left = (self.deadline - pyxel.frame_count) / _GRAPHICS_FPS
+            pyxel.text(140, 5, 'Time: %3.1fs' % time_left, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
 
         pyxel.camera(0, -self.camera_altitude)
         for thing in sorted(self.invaders, key=lambda b: (b.y, b.z)):
