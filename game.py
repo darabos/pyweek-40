@@ -5,7 +5,7 @@ import math
 import random
 import pyxel
 import textwrap
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Callable
 
 
@@ -72,9 +72,9 @@ class Player:
         return direction
 
     def update(self):
-        ACCELERATION = 1.0
-        GRAVITY = 0.0
-        DRAG = 0.08
+        ACCELERATION = 0.8
+        GRAVITY = 0.06
+        DRAG = 0.02
 
         direction = self.handle_keypress()
         if direction & Direction.LEFT.value:
@@ -117,9 +117,11 @@ class Player:
                     self.carrying = None
                     pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
             else:
-                b = self.game.city.closest_block(self.x + self.width / 2, self.y + self.height / 2 + 10)
+                b, is_new = self.game.closest_block(self.x + self.width / 2, self.y + self.height / 2 + 10)
                 if b:
-                    if self.game.city.remove(b):
+                    if is_new or self.game.city.remove(b):
+                        if is_new:
+                            self.game.new_block_area.picked_up(b)
                         self.carrying = b
                         pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
                     else:
@@ -208,6 +210,7 @@ Skyramp = BlockType(
                          col=0, row=0, altitude=0),
                BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
                          col=-1, row=0, altitude=1)))
+AllBlocks = NormalBlocks + RedBlocks + [Skybridge, Skyramp]
 
 
 @dataclass
@@ -403,22 +406,6 @@ class City:
             tb.pop()
         block.col = block.row = block.altitude = None
         return True
-
-    def closest_block(self, x: float, y: float):
-        closest = None
-        closest_dist = 40
-        for row, tile_col in enumerate(self.tiles):
-            for col, tile in enumerate(tile_col):
-                if not tile or not tile.blocks:
-                    continue
-                top_x, top_y = self.tile_to_screen(col, row, len(tile.blocks) - 1)
-                dx = top_x + 8 - x
-                dy = top_y + 8 - y
-                dist = math.hypot(dx, dy)
-                if dist <= closest_dist:
-                    closest = tile.blocks[-1].block
-                    closest_dist = dist
-        return closest
 
     def valid_drop_spot(self, base_col: int, base_row: int, base_altitude: int, block: Block):
         bt = block.blocktype
@@ -663,6 +650,45 @@ def make_invader(city: City):
     )
 
 
+@dataclass
+class NewBlockArea:
+    blocks: list[Block] = field(default_factory=list)
+
+    num: int = 4
+    x_origin: int = 56
+    y_origin: int = 35
+    block_width: int = 32
+    height: int = 32
+    border: int = 2
+
+    def update(self, camera_altitude):
+        while len(self.blocks) < self.num:
+            self.blocks.append(None)
+        for idx in range(len(self.blocks)):
+            if self.blocks[idx] is None:
+                self.blocks[idx] = Block(self.x_origin + self.border + self.block_width * idx, 0, None, None, None, random.choice(AllBlocks))
+            self.blocks[idx].y = self.y_origin + self.border - camera_altitude
+
+    def picked_up(self, block):
+        for idx in range(len(self.blocks)):
+            if self.blocks[idx] is block:
+                self.blocks[idx] = None
+
+    def draw(self, camera_altitude):
+        pyxel.camera(0, 0)
+        pyxel.dither(0.5)
+        pyxel.rect(self.x_origin, self.y_origin,
+                   self.border * 2 + self.block_width * self.num,
+                   self.border * 2 + self.height,
+                   pyxel.COLOR_BLACK)
+        # TODO: draw a border for the pick-up area
+        pyxel.dither(1.0)
+        pyxel.camera(0, -camera_altitude)
+        for b in self.blocks:
+            if b:
+                b.draw()
+
+
 class Game:
 
     def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False):
@@ -672,6 +698,10 @@ class Game:
         self.background = Background()
         self.demo_mode = demo_mode
         self.camera_altitude = 0
+        if not self.demo_mode:
+            self.new_block_area = NewBlockArea()
+        else:
+            self.new_block_area = None
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -680,6 +710,16 @@ class Game:
 
         self.background.update()
         self.player.update()
+        if not self.demo_mode:
+            if self.player.y + self.camera_altitude < 40:
+                self.camera_altitude = 40 - self.player.y
+            if self.player.y + self.camera_altitude > pyxel.height - 40:
+                self.camera_altitude = max(0, pyxel.height - 40 - self.player.y)
+        else:
+            self.camera_altitude = 0
+        if self.new_block_area:
+            self.new_block_area.update(self.camera_altitude)
+
         if not _ENABLE_INVADERS:
             return
         for invader in self.invaders:
@@ -690,13 +730,6 @@ class Game:
 
     def draw(self):
         pyxel.camera(0, 0)
-        if not self.demo_mode:
-            if self.player.y + self.camera_altitude < 40:
-                self.camera_altitude = 40 - self.player.y
-            if self.player.y + self.camera_altitude > pyxel.height - 40:
-                self.camera_altitude = max(0, pyxel.height - 40 - self.player.y)
-        else:
-            self.camera_altitude = 0
         self.background.draw(self.camera_altitude)
 
         if not self.demo_mode:
@@ -707,6 +740,9 @@ class Game:
         for thing in sorted(self.invaders, key=lambda b: (b.y, b.z)):
             thing.draw()
         self.city.draw()
+        if self.new_block_area:
+            self.new_block_area.draw(self.camera_altitude)
+            pyxel.camera(0, -self.camera_altitude)
         if self.player.carrying:
             drop_spot = self.city.closest_drop_spot(
                 self.player.x + self.player.width / 2,
@@ -716,12 +752,40 @@ class Game:
                 col, row, altitude, valid = drop_spot
                 self.draw_drop_indicator(col, row, altitude, self.player.carrying)
         else:
-            cb = self.city.closest_block(
+            cb, is_new = self.closest_block(
                 self.player.x + self.player.width / 2,
                 self.player.y + self.player.height / 2 + 10)
             if cb:
-                self.draw_pickup_indicator(cb)
+                self.draw_pickup_indicator(cb, is_new)
         self.player.draw()
+
+    def closest_block(self, x: float, y: float):
+        closest = None
+        closest_is_new = None
+        closest_dist = 40
+        for row, tile_col in enumerate(self.city.tiles):
+            for col, tile in enumerate(tile_col):
+                if not tile or not tile.blocks:
+                    continue
+                top_x, top_y = self.city.tile_to_screen(col, row, len(tile.blocks) - 1)
+                dx = top_x + 8 - x
+                dy = top_y + 8 - y
+                dist = math.hypot(dx, dy)
+                if dist <= closest_dist:
+                    closest = tile.blocks[-1].block
+                    closest_dist = dist
+                    closest_is_new = False
+        if self.new_block_area:
+            for b in self.new_block_area.blocks:
+                # TODO: use proper center of block
+                dx = b.x + 8 - x
+                dy = b.y + 8 - y
+                dist = math.hypot(dx, dy)
+                if dist <= closest_dist:
+                    closest = b
+                    closest_dist = dist
+                    closest_is_new = True
+        return closest, closest_is_new
 
     def draw_drop_indicator(self, base_col, base_row, base_altitude, block):
         # TODO: this has an annoying amount of duplication with valid_drop_spot.
@@ -747,19 +811,26 @@ class Game:
                 outline_block(*self.city.tile_to_screen(col, row, altitude),
                               color=8)
 
-    def draw_pickup_indicator(self, block):
+    def draw_pickup_indicator(self, block, is_new):
         bt = block.blocktype
         for part in bt.footprint:
-            col = part.col + block.col
-            row = part.row + block.row
-            altitude = part.altitude + block.altitude
-            tile = self.city.tiles[row][col]
-            valid = len(tile.blocks) == altitude + 1
-            if valid:
-                outline_block(*self.city.tile_to_screen(col, row, altitude))
+            if is_new:
+                valid = True
+                x, y = block.x, block.y
+                dx, dy = City.base_tile_to_screen(part.col, part.row, part.altitude)
+                x += dx
+                y += dy
             else:
-                outline_block(*self.city.tile_to_screen(col, row, altitude),
-                              color=8)
+                col = part.col + block.col
+                row = part.row + block.row
+                altitude = part.altitude + block.altitude
+                tile = self.city.tiles[row][col]
+                valid = len(tile.blocks) == altitude + 1
+                x, y = self.city.tile_to_screen(col, row, altitude)
+            if valid:
+                outline_block(x, y)
+            else:
+                outline_block(x, y, color=8)
 
 
 def text_width(text: str, font: pyxel.Font):
