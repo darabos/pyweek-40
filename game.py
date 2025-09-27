@@ -1198,6 +1198,9 @@ class ScoreScreen:
         bisect.insort_left(self.score_table, (text, score, True),
                            key=lambda x: -x[1])
 
+        pyxel.play(0, 'T130 @2 O3 V80 Q50 E C E C', loop=True)
+        pyxel.play(1, 'T130 @1 O4 V80 Q70 G2 Q50 G8. E16 G8. > C16 < Q70 G1 G2 Q50 G8. E16 C8. E16 < Q70 G1', loop=True)
+
     def update(self):
         self.background.update()
 
