@@ -298,8 +298,8 @@ def MakeSkyrampsRightDown(base_x, base_y, base_num,
                               col=1, row=0, altitude=1),
                        )))
     return bts
-def MakeSkyrampsLeft(base_x, base_y, base_num,
-                     bridge_x, bridge_y, bridge_num):
+def MakeSkyrampsLeftUp(base_x, base_y, base_num,
+                       bridge_x, bridge_y, bridge_num):
     bts = []
     for bridge_idx in range(bridge_num):
         for _ in range(4):
@@ -317,14 +317,35 @@ def MakeSkyrampsLeft(base_x, base_y, base_num,
                         BlockSprite(-8, -16, bridge_x, bridge_y + bridge_idx * 32, 23, 28)),
                                      col=0, row=-1, altitude=1))))
     return bts
+def MakeSkyrampsLeftDown(base_x, base_y, base_num,
+                         bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            lefter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(16, 0, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(24, 0, base_x + 8, base_y + left * 16, 8, 16)),
+                              col=0, row=1, altitude=1),
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + lefter * 16, 16, 16),
+                        BlockSprite(8, 3, bridge_x, bridge_y + bridge_idx * 16, 8, 13)),
+                                     col=0, row=0, altitude=0))))
+    return bts
 Skyramps = (
     MakeSkyrampsRightUp(0, 16, 8, 194, 33, 2)
     +
     MakeSkyrampsRightDown(0, 16, 8, 222, 9 + 16, 1)  # Hard to visually read the blank wall, so don't use that sprite.
     +
-    MakeSkyrampsLeft(0, 16, 8, 192, 112, 2)
+    MakeSkyrampsLeftUp(0, 16, 8, 192, 112, 2)
+    +
+    MakeSkyrampsLeftDown(0, 16, 8, 224, 67 + 16, 1)  # Hard to visually read the blank wall, so don't use that sprite.
     )
-AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 2
+AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps
 
 
 @dataclass
