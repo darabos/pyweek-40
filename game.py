@@ -301,7 +301,7 @@ Skyramps = (
     MakeSkyrampsRight(0, 16, 8, 194, 33, 2)
     +
     MakeSkyrampsLeft(0, 16, 8, 192, 112, 2))
-AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 10
+AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 2
 
 
 @dataclass
