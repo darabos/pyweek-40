@@ -203,8 +203,8 @@ class BlockType:
                 xs.append(sprite.x + sprite.w)
                 ys.append(sprite.y)
                 ys.append(sprite.y + sprite.h)
-        object.__setattr__(self, 'x_center', 0.5 * (min(xs) + max(xs)))
-        object.__setattr__(self, 'y_center', 0.5 * (min(ys) + max(ys)))
+        object.__setattr__(self, 'x_center', (min(xs) + max(xs)) // 2)
+        object.__setattr__(self, 'y_center', (min(ys) + max(ys)) // 2)
 
 
 def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
