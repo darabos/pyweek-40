@@ -1269,7 +1269,7 @@ class Credits:
     """)
 
     def __init__(self):
-        self.y = pyxel.height // 3
+        self.y = pyxel.height * 0.8
         self.blocks = [self.Block0, self.Block1, self.Block2, self.Block3]
         self.bld_l = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 7 / 16)))]
         self.bld_r = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 5 / 16)))]
@@ -1291,6 +1291,8 @@ class Credits:
         pyxel.cls(pyxel.COLOR_BLACK)
         text_centered(self.TEXT, self.y, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_RED)
         self.y -= 0.5
+        if -self.y > (pyxel.height * 0.5):
+          self.y = pyxel.height
         start_l_x, start_l_y = 8, pyxel.height
         start_r_x, start_r_y = pyxel.width-40, pyxel.height
         for i, blk in enumerate(self.bld_l):
