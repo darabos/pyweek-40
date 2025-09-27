@@ -474,8 +474,8 @@ class Road(Foundation):
         sx, sy = self.sprite
         s = -1 if self.flipped else 1
         o = 1 if self.flipped else 0
-        for i in range(3 + o):
-            i -= 1
+        for i in range(5 - o):
+            i -= 2 - o
             pyxel.blt(
                 self.x + s * i * 4 + 2 * o,
                 self.y + 2 + i * 2 - o,
