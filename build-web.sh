@@ -4,7 +4,8 @@ rm pyweek-40.html pyweek-40.pyxapp
 pyxel package . game.py
 pyxel app2html pyweek-40.pyxapp
 git clone --single-branch --branch gh-pages git@github.com:darabos/pyweek-40.git web-dist
-cat pyweek-40.html |sed 's|src=".*pyxel.js"|src="wasm/pyxel.js"|g' > web-dist/index.html
+cat pyweek-40.html | sed 's|src=".*pyxel.js"|src="wasm/pyxel.js"|g' > web-dist/index.html
+echo '<title>Constrictor Constructor</title>' >> web-dist/index.html
 mkdir -p web-dist/wasm
 cp ../pyxel/wasm/pyxel.js web-dist/wasm/
 cp ../pyxel/wasm/pyxel.css web-dist/wasm/
