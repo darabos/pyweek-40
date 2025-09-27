@@ -48,7 +48,7 @@ class Player:
     width: int = 16
     height: int = 16
     direction: Direction = Direction.NONE.value
-    maximum_altitude: int = 300
+    maximum_altitude: int = 0
     carrying: "Block | None" = None
 
     def draw(self):
@@ -112,6 +112,7 @@ class Player:
                 else:
                     col, row, altitude, valid = drop_spot
                     self.game.city.add(col, row, self.carrying)
+                    self.maximum_altitude = max(self.maximum_altitude, 50 - self.carrying.y)
                     self.carrying = None
                     pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
             else:
