@@ -1300,8 +1300,8 @@ class ScoreScreen:
 class Credits:
 
     TEXT = textwrap.dedent("""\
-        Consumer
-          Consumer
+      Constricter
+        Constructor
 
     Brought to you by:
 
@@ -1399,8 +1399,8 @@ class Menu:
     def draw(self):
         self.background_game.draw()
 
-        pyxel.text(56 - 16, 8, "Consumer", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
-        pyxel.text(56 + 16, 40, "Consumer", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
+        pyxel.text(36 - 16, 8, "Constrictor", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
+        pyxel.text(36 + 16, 40, "Constructor", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
 
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
