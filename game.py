@@ -1265,6 +1265,7 @@ class Credits:
     Alexander Malmberg
     Daniele Cocca
     Dániel Darabos
+    Gökdeniz Karadag
     """)
 
     def __init__(self):
