@@ -1206,8 +1206,8 @@ class ScoreScreen:
 
         global game_card
         if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_SPACE):
-            game_card.active = Menu()
             pyxel.stop()
+            game_card.active = Menu()
 
         if pyxel.btn(pyxel.KEY_UP):
             self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
@@ -1297,13 +1297,13 @@ class Menu:
 
         def _PlayGame():
             global game_card
-            game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
             pyxel.stop()
+            game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
 
         def _ShowCredits():
             global game_card
-            game_card.active = Credits()
             pyxel.stop()
+            game_card.active = Credits()
 
         self.menu_items = (
             ("Play Game", _PlayGame),
