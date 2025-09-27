@@ -860,18 +860,27 @@ class NewBlockArea:
         self.carried_idx = None
 
     def draw(self, camera_altitude):
+        box_width = self.border * 2 + self.block_width * self.num
+        box_height = self.border * 2 + self.height
+
         pyxel.camera(0, 0)
         pyxel.dither(0.5)
         pyxel.rect(self.x_origin, self.y_origin,
-                   self.border * 2 + self.block_width * self.num,
-                   self.border * 2 + self.height,
+                   box_width, box_height,
                    pyxel.COLOR_BLACK)
         pyxel.dither(1.0)
         for b in range(self.border // 2 + 1):
             pyxel.rectb(self.x_origin - b, self.y_origin - b,
-                        b * 2 + self.border * 2 + self.block_width * self.num,
-                        b * 2 + self.border * 2 + self.height,
+                        b * 2 + box_width,
+                        b * 2 + box_height,
                         pyxel.COLOR_GRAY)
+
+        if self.carried_idx is None:
+            dx = 2 + (2 * math.cos(pyxel.frame_count / 2))
+            dy = (box_height - 16) / 2
+            pyxel.blt(self.x_origin - 16 - dx, self.y_origin + dy, 0, 48, 88, 16, 16, colkey=pyxel.COLOR_BLACK)
+            pyxel.blt(self.x_origin + box_width + dx, self.y_origin + dy, 0, 48, 104, 16, 16, colkey=pyxel.COLOR_BLACK)
+
         pyxel.dither(0.5)
         if self.carried_idx is not None:
             pyxel.rect(self.x_origin + self.border + self.block_width * self.carried_idx + 1,
