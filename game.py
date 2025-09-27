@@ -5,7 +5,7 @@ import math
 import random
 import pyxel
 import textwrap
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from collections.abc import Callable
 
 
