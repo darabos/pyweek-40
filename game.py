@@ -741,7 +741,7 @@ def make_invader(city: City):
 
 @dataclass
 class NewBlockArea:
-    blocks: list[Block] = field(default_factory=list)
+    blocks: list[Block]
 
     carried_idx: int | None = None
 
@@ -752,6 +752,11 @@ class NewBlockArea:
     height: int = 32
     border: int = 2
 
+    def __init__(self):
+        self.blocks = [None] * self.num
+        # Populate an initial set of blocks.
+        self.update(0)
+
     def coords_for_idx(self, idx, camera_altitude, center=False):
         x = self.x_origin + self.border + self.block_width * idx
         y = self.y_origin + self.border - camera_altitude
@@ -761,8 +766,6 @@ class NewBlockArea:
         return x, y
 
     def update(self, camera_altitude):
-        while len(self.blocks) < self.num:
-            self.blocks.append(None)
         for idx in range(len(self.blocks)):
             if idx == self.carried_idx:
                 continue
@@ -825,6 +828,16 @@ class DropInNewArea(DropSpot):
 
 
 class Game:
+    class State(enum.IntEnum):
+        INTRO_MESSAGE = 1
+        INTRO_COUNTDOWN_3 = 2
+        INTRO_COUNTDOWN_2 = 3
+        INTRO_COUNTDOWN_1 = 4
+        INTRO_GO = 5
+        PLAY = 6
+    state: State
+
+    camera_altitude: int = 0
 
     def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False, time_limit: int = 30):
         self.player = player_factory(self)
@@ -832,14 +845,24 @@ class Game:
         self.city = City.load(cx=16, cy=0, max_height=5, y_offset_base=city_y_offset_base)
         self.background = Background()
         self.demo_mode = demo_mode
-        self.camera_altitude = 0
+        self.time_limit = time_limit
         if not self.demo_mode:
             self.new_block_area = NewBlockArea()
-            self.deadline = pyxel.frame_count + time_limit * _GRAPHICS_FPS
+            self.state = Game.State.INTRO_MESSAGE
+            self.deadline = pyxel.frame_count + 2 * _GRAPHICS_FPS
         else:
             self.new_block_area = None
+            self.state = Game.State.PLAY
 
     def update(self):
+        if self.state != Game.State.PLAY:
+            if pyxel.frame_count > self.deadline:
+                self.state += 1
+                self.deadline = pyxel.frame_count + _GRAPHICS_FPS // 2
+                if self.state == Game.State.PLAY:
+                    self.deadline = pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
+            return
+
         if not self.demo_mode:
             global game_card
             if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -871,6 +894,25 @@ class Game:
     def draw(self):
         pyxel.camera(0, 0)
         self.background.draw(self.camera_altitude)
+
+        if self.state != Game.State.PLAY:
+            self.city.draw()
+            pyxel.dither(1 - 0.25 * (self.state - 1))
+            pyxel.rect(0, 0, pyxel.width, pyxel.height, pyxel.COLOR_BLACK)
+            pyxel.dither(1.0)
+            if self.state == Game.State.INTRO_MESSAGE:
+                text_centered('Build as high as', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                text_centered('you can in', 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                text_centered('%i seconds!' % self.time_limit, 180, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+            elif self.state == Game.State.INTRO_COUNTDOWN_3:
+                text_centered('3', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
+            elif self.state == Game.State.INTRO_COUNTDOWN_2:
+                text_centered('2', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
+            elif self.state == Game.State.INTRO_COUNTDOWN_1:
+                text_centered('1', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
+            elif self.state == Game.State.INTRO_GO:
+                text_centered('Go!', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
+            return
 
         if not self.demo_mode:
             score = self.city.score()
