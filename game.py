@@ -161,24 +161,40 @@ class BlockSprite(collections.namedtuple('BlockSprite', 'x y sx sy w h')):
 
 
 @dataclass(frozen=True)
-class BlockType:
-    # TODO: fix draw order
+class BlockPart:
     sprites: tuple[BlockSprite, ...]
-    # Sequence of tiles occupied, as offsets (in blocks) from the base
-    # coordinate.
-    footprint: tuple[tuple[int, int, int], ...] = ((0, 0, 0), )
+    # Offsets (in blocks) from the base coordinate.
+    col: int = 0
+    row: int = 0
+    altitude: int = 0
+
+
+@dataclass(frozen=True)
+class BlockType:
+    # Sequence of tiles occupied.
+    footprint: tuple[BlockPart, ...]
 
 
 NormalBlocks = [
-    BlockType(sprites=(BlockSprite(0, 0, 0, 16 + i * 16, 16, 16), ))
+    BlockType(footprint=(
+        BlockPart(sprites=(BlockSprite(0, 0, 0, 16 + i * 16, 16, 16), )), )
+              )
     for i in range(8)]
 RedBlocks = [
-    BlockType(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), ))
+    BlockType(footprint=(
+        BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
+              )
     for i in range(2)]
-Skybridge = BlockType(sprites=(BlockSprite(0, -7, 120, 33, 30, 23), ),
-                      footprint=((0, 0, 0), (-1, 0, 0)))
-Skyramp = BlockType(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
-                    footprint=((0, 0, 0), (-1, 0, 1)))
+Skybridge = BlockType(
+    footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                         col=0, row=0, altitude=0),
+               BlockPart(sprites=(BlockSprite(0, -7, 120, 33, 30, 23), ),
+                         col=-1, row=0, altitude=0)))
+Skyramp = BlockType(
+    footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                         col=0, row=0, altitude=0),
+               BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
+                         col=-1, row=0, altitude=1)))
 
 
 @dataclass
@@ -225,9 +241,14 @@ class Block:
 
     blocktype: BlockType
 
-    def draw(self):
-        for sprite in self.blocktype.sprites:
-            sprite.draw(self.x, self.y)
+    def draw(self, index=None):
+        if index is None:
+            for part in self.blocktype.footprint:
+                for sprite in part.sprites:
+                    sprite.draw(self.x, self.y)
+        else:
+            for sprite in self.blocktype.footprint[index].sprites:
+                sprite.draw(self.x, self.y)
 
 
 def outline_block(x: float, y: float, color: int | None = None):
@@ -292,16 +313,21 @@ class Road(Foundation):
             )
 
 
+# Index is the index into the blocktype footprint array of the part of
+# the block that occupies this tile.
+TileBlock = collections.namedtuple('TileBlock', 'block index')
+
+
 @dataclass
 class Tile:
     foundation: Foundation
-    blocks : list[Block] | None = None  # None means blocks can't be placed on this tile.
+    blocks : list[TileBlock] | None = None  # None means blocks can't be placed on this tile.
 
     def draw(self):
         self.foundation.draw()
         if self.blocks:
-            for b in self.blocks:
-                b.draw()
+            for b, idx in self.blocks:
+                b.draw(idx)
 
 
 @dataclass
@@ -342,20 +368,20 @@ class City:
         block.row = base_row
         block.altitude = base_altitude
         block.x, block.y = self.tile_to_screen(base_col, base_row, base_altitude)
-        for col, row, altitude in block.blocktype.footprint:
-            col += base_col
-            row += base_row
-            altitude += base_altitude
+        for idx, part in enumerate(block.blocktype.footprint):
+            col = part.col + base_col
+            row = part.row + base_row
+            altitude = part.altitude + base_altitude
             tile = self.tiles[row][col]
-            tile.blocks.append(block)
+            tile.blocks.append(TileBlock(block, idx))
 
     def remove(self, block):
         bt = block.blocktype
         to_pop = []
-        for col, row, altitude in bt.footprint:
-            col += block.col
-            row += block.row
-            altitude += block.altitude
+        for part in bt.footprint:
+            col = part.col + block.col
+            row = part.row + block.row
+            altitude = part.altitude + block.altitude
             tile = self.tiles[row][col]
             if len(tile.blocks) != altitude + 1:
                 return False
@@ -377,16 +403,16 @@ class City:
                 dy = top_y + 8 - y
                 dist = math.hypot(dx, dy)
                 if dist <= closest_dist:
-                    closest = tile.blocks[-1]
+                    closest = tile.blocks[-1].block
                     closest_dist = dist
         return closest
 
     def valid_drop_spot(self, base_col: int, base_row: int, base_altitude: int, block: Block):
         bt = block.blocktype
-        for col, row, altitude in bt.footprint:
-            col += base_col
-            row += base_row
-            altitude += base_altitude
+        for part in bt.footprint:
+            col = part.col + base_col
+            row = part.row + base_row
+            altitude = part.altitude + base_altitude
             if row < 0 or row >= len(self.tiles):
                 return False
             if col < 0 or col >= len(self.tiles[0]):
@@ -470,20 +496,20 @@ class City:
                         x += x_off
                         y += y_off
                         b = Block(x, y, col, row, h, sprites[sprite])
-                        tile.blocks.append(b)
+                        tile.blocks.append(TileBlock(b, 0))
 
         # TODO: temp code for testing
         x, y = City.base_tile_to_screen(12, 11, 0)
         x += x_off
         y += y_off
         b = Block(x, y, 12, 11, 0, Skybridge)
-        tiles[11][12].blocks = [b]
-        tiles[11][11].blocks = [b]
+        tiles[11][12].blocks = [TileBlock(b, 0)]
+        tiles[11][11].blocks = [TileBlock(b, 1)]
         x, y = City.base_tile_to_screen(12, 11, 1)
         x += x_off
         y += y_off
         b = Block(x, y, 12, 11, 1, NormalBlocks[0])
-        tiles[11][12].blocks.append(b)
+        tiles[11][12].blocks.append(TileBlock(b, 0))
 
         x, y = City.base_tile_to_screen(9, 12, 0)
         x += x_off
@@ -493,8 +519,8 @@ class City:
         x += x_off
         y += y_off
         nb = Block(x, y, 8, 12, 0, NormalBlocks[0])
-        tiles[12][9].blocks = [b]
-        tiles[12][8].blocks = [nb, b]
+        tiles[12][9].blocks = [TileBlock(b, 0)]
+        tiles[12][8].blocks = [TileBlock(nb, 0), TileBlock(b, 1)]
 
         def screen_to_tile(sx: float, sy: float):
             tx = sx - x_off - 8
@@ -674,10 +700,10 @@ class Game:
     def draw_drop_indicator(self, base_col, base_row, base_altitude, block):
         # TODO: this has an annoying amount of duplication with valid_drop_spot.
         bt = block.blocktype
-        for col, row, altitude in bt.footprint:
-            col += base_col
-            row += base_row
-            altitude += base_altitude
+        for part in bt.footprint:
+            col = part.col + base_col
+            row = part.row + base_row
+            altitude = part.altitude + base_altitude
             valid = True
             if row < 0 or row >= len(self.city.tiles):
                 valid = False
@@ -697,10 +723,10 @@ class Game:
 
     def draw_pickup_indicator(self, block):
         bt = block.blocktype
-        for col, row, altitude in bt.footprint:
-            col += block.col
-            row += block.row
-            altitude += block.altitude
+        for part in bt.footprint:
+            col = part.col + block.col
+            row = part.row + block.row
+            altitude = part.altitude + block.altitude
             tile = self.city.tiles[row][col]
             valid = len(tile.blocks) == altitude + 1
             if valid:
