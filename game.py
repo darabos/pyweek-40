@@ -215,18 +215,50 @@ RedBlocks = [
         BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
               )
     for i in range(2)]
-Skybridges = [
-    BlockType(
-        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                             col=0, row=0, altitude=0),
-                   BlockPart(sprites=(BlockSprite(0, -7, 120, 33, 30, 23), ),
-                             col=-1, row=0, altitude=0))),
-    BlockType(
-        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                             col=0, row=0, altitude=0),
-                   BlockPart(sprites=(BlockSprite(-16, -8, 120, 104, 32, 24), ),
-                             col=0, row=-1, altitude=0))),
-    ]
+
+def MakeSkyBridgesRight(base_x, base_y, base_num,
+                        bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            righter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(8, 0, base_x + 8, base_y + left * 16, 8, 16)),
+                              col=0, row=0, altitude=0),
+                    BlockPart(sprites=(
+                        BlockSprite(14 + 8, -7, base_x + 8, base_y + righter * 16, 8, 16),
+                        BlockSprite(14 - 3, -7, bridge_x, bridge_y + bridge_idx * 24, 11, 17)),
+                                     col=-1, row=0, altitude=0))))
+    return bts
+def MakeSkyBridgesLeft(base_x, base_y, base_num,
+                       bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            lefter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(8, 0, base_x + 8, base_y + left * 16, 8, 16)),
+                              col=0, row=0, altitude=0),
+                    BlockPart(sprites=(
+                        BlockSprite(-16, -8, base_x, base_y + lefter * 16, 8, 16),
+                        BlockSprite(-8, -8, bridge_x, bridge_y + bridge_idx * 24, 12, 18)),
+                                     col=0, row=-1, altitude=0))))
+    return bts
+Skybridges = (
+    MakeSkyBridgesRight(0, 16, 8, 163, 9, 3)
+    +
+    MakeSkyBridgesLeft(0, 16, 8, 168, 104, 3))
+
 Skyramps = [
     BlockType(
         footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
@@ -239,7 +271,7 @@ Skyramps = [
                    BlockPart(sprites=(BlockSprite(-16, -16, 120, 144, 32, 32), ),
                              col=0, row=-1, altitude=1))),
     ]
-AllBlocks = NormalBlocks + RedBlocks + Skybridges * 20 + Skyramps * 10
+AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 10
 
 
 @dataclass
