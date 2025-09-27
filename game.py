@@ -929,7 +929,7 @@ class Game:
         if not self.demo_mode:
             self.new_block_area = NewBlockArea()
             self.state = Game.State.INTRO_MESSAGE
-            self.deadline = pyxel.frame_count + 2 * _GRAPHICS_FPS
+            self.deadline = pyxel.frame_count + 4 * _GRAPHICS_FPS
         else:
             self.new_block_area = None
             self.state = Game.State.PLAY
@@ -951,7 +951,7 @@ class Game:
             if pyxel.btnp(pyxel.KEY_SPACE):
                 # shortcut the countdown by pressing space
                 self.state = Game.State.PLAY
-                self.deadline = _ZEN_MODE if self.time_limit == _ZEN_MODE else self.frame_count + _GRAPHICS_FPS * self.time_limit
+                self.deadline = _ZEN_MODE if self.time_limit == _ZEN_MODE else pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
             elif pyxel.frame_count > self.deadline:
                 # countdown before game
                 self.state += 1
@@ -1004,9 +1004,20 @@ class Game:
                     text_centered('Build to your', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
                     text_centered("heart's content!", 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
                 else:
-                    text_centered('Build as high as', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
-                    text_centered('you can in', 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
-                    text_centered('%i seconds!' % self.time_limit, 180, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                    text = [
+                        'Build as high as',
+                        'you can in',
+                        '%i seconds!' % self.time_limit,
+                        '',
+                        'Grab new parts from',
+                        'the box and drop them',
+                        'using space bar'
+                    ]
+                    pos = 100
+                    for t in text:
+                        text_centered(t, pos, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                        pos += 20
+
             elif self.state == Game.State.INTRO_COUNTDOWN_3:
                 text_centered('3', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
             elif self.state == Game.State.INTRO_COUNTDOWN_2:
