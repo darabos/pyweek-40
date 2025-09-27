@@ -16,8 +16,8 @@ void main() {
     vec2 texelSize = 1. * u_screenScale / u_screenSize;
 
     vec4 color = vec4(0.0);
-    int S = 10;
-    float K = 2.;
+    const int S = 10;
+    const float K = 2.;
 
     for(int x = -S; x <= S; ++x) {
         for(int y = -S; y <= S; ++y) {
