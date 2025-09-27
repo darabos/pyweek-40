@@ -35,6 +35,8 @@ _SOUND_PICK_UP = 1
 _SOUND_FAILED_DROP = 2
 _SOUND_FAILED_PICK_UP = 3
 
+_SOUND_ENABLED = True
+
 _CYCLE_COLORS = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
 
 
@@ -43,6 +45,13 @@ def AssertButNotInRelease(text='Something unexpected happened.'):
         return
     assert False, text
 
+
+def sound_play(*args, **kwargs):
+    global _SOUND_ENABLED
+    if _SOUND_ENABLED:
+        pyxel.play(*args, **kwargs)
+    else:
+        pass
 
 class Direction(enum.IntFlag):
     NONE = 0
@@ -122,7 +131,7 @@ class Player:
             if self.carrying:
                 drop_spot = self.game.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 12, self.carrying)
                 if drop_spot is None or not drop_spot.valid:
-                    pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_DROP)
+                    sound_play(_CHANNEL_SFX, _SOUND_FAILED_DROP)
                 else:
                     if isinstance(drop_spot, DropInCity):
                         self.game.city.add(drop_spot.col, drop_spot.row, self.carrying)
@@ -134,7 +143,7 @@ class Player:
                     else:
                         AssertButNotInRelease()
                     self.carrying = None
-                    pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
+                    sound_play(_CHANNEL_SFX, _SOUND_DROP)
             else:
                 b, is_new = self.game.closest_pickup_spot(self.x + self.width / 2, self.y + self.height / 2 + 10)
                 if b:
@@ -143,9 +152,9 @@ class Player:
                             self.game.new_block_area.picked_up(b)
                         self.carrying = b
                         self.carrying_new = is_new
-                        pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
+                        sound_play(_CHANNEL_SFX, _SOUND_PICK_UP)
                     else:
-                        pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_PICK_UP)
+                        sound_play(_CHANNEL_SFX, _SOUND_FAILED_PICK_UP)
 
 
 @dataclass
@@ -1245,8 +1254,8 @@ class ScoreScreen:
         bisect.insort_left(self.score_table, (text, score, True),
                            key=lambda x: -x[1])
 
-        pyxel.play(0, 'T130 @2 O3 V80 Q50 E C E C', loop=True)
-        pyxel.play(1, 'T130 @1 O4 V80 Q70 G2 Q50 G8. E16 G8. > C16 < Q70 G1 G2 Q50 G8. E16 C8. E16 < Q70 G1', loop=True)
+        sound_play(0, 'T130 @2 O3 V80 Q50 E C E C', loop=True)
+        sound_play(1, 'T130 @1 O4 V80 Q70 G2 Q50 G8. E16 G8. > C16 < Q70 G1 G2 Q50 G8. E16 C8. E16 < Q70 G1', loop=True)
 
     def update(self):
         self.background.update()
@@ -1321,8 +1330,8 @@ class Credits:
         self.bld_l = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 7 / 16)))]
         self.bld_r = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 5 / 16)))]
 
-        pyxel.play(0, 'T120 @2  V40 O4 B B E2 B B E2 B D E- B- C A B2', loop=True)
-        pyxel.play(1, 'T120 @1  V50 O2 G B > C2 < G B > C2 < G B > C D E F# G2', loop=True)
+        sound_play(0, 'T120 @2  V40 O4 B B E2 B B E2 B D E- B- C A B2', loop=True)
+        sound_play(1, 'T120 @1  V50 O2 G B > C2 < G B > C2 < G B > C D E F# G2', loop=True)
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -1360,10 +1369,7 @@ class Menu:
             city_y_offset_base=96,
             demo_mode=True,
         )
-        pyxel.play(0, 'T128 V30 @1 @VIB1 { 48, 12, 50 } O5 L1 C# C# C# C#  D C#2 < B2 A G#', loop=True)
-        pyxel.play(1, 'T128 V40 @1 @VIB1 { 48, 12, 50 } O4 L1 F# G# A B  F# F# D C#', loop=True)
-        pyxel.play(2, 'T128 V40 @2 O3 L16 < [ F# R A R F# R > C R C# R < C# R A R G# R ] 4 [ B R > D R < B R > F R F# R < F# R > D R C# R < ] 3 B R > D R < B R > F R F# R C# R < A R G# R', loop=True)
-        pyxel.play(3, 'T128 Q50 @3 L16 @ENV1{30,8,0} O7 [ RRRR FRRR RRFF RRRR ] 7 [ RRFF RFFR FFRR RFRF ] 1', loop=True)
+        self._PlayMusic()
 
         def _PlayGame():
             global game_card
@@ -1380,12 +1386,40 @@ class Menu:
             pyxel.stop()
             game_card.active = Credits()
 
+
+
+        @dataclass
+        class SoundSetting:
+            pos = (2, pyxel.height - 16)
+            text = self._SoundState
+        _SOUND_SETTING = SoundSetting()
+
         self.menu_items = (
-            ("Play Game", _PlayGame),
-            ("Zen Mode", _PlayGameZen),
-            ("Credits", _ShowCredits),
-            ("Quit", lambda: pyxel.quit()),
+            ("Play Game", _PlayGame, None),
+            ("Zen Mode", _PlayGameZen, None),
+            ("Credits", _ShowCredits, None),
+            ("Quit", lambda: pyxel.quit(), None),
+            ("Sound: ", self._SoundToggle, _SOUND_SETTING)
         )
+
+    def _PlayMusic(self):
+        sound_play(0, 'T128 V30 @1 @VIB1 { 48, 12, 50 } O5 L1 C# C# C# C#  D C#2 < B2 A G#', loop=True)
+        sound_play(1, 'T128 V40 @1 @VIB1 { 48, 12, 50 } O4 L1 F# G# A B  F# F# D C#', loop=True)
+        sound_play(2, 'T128 V40 @2 O3 L16 < [ F# R A R F# R > C R C# R < C# R A R G# R ] 4 [ B R > D R < B R > F R F# R < F# R > D R C# R < ] 3 B R > D R < B R > F R F# R C# R < A R G# R', loop=True)
+        sound_play(3, 'T128 Q50 @3 L16 @ENV1{30,8,0} O7 [ RRRR FRRR RRFF RRRR ] 7 [ RRFF RFFR FFRR RFRF ] 1', loop=True)
+
+    def _SoundState(self):
+        global _SOUND_ENABLED
+        return "Sound: " + ("on" if _SOUND_ENABLED else "off")
+
+    def _SoundToggle(self):
+        global _SOUND_ENABLED
+        if _SOUND_ENABLED:
+            _SOUND_ENABLED = False
+            pyxel.stop()
+        else:
+            _SOUND_ENABLED = True
+            self._PlayMusic()
 
     def update(self):
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -1395,7 +1429,7 @@ class Menu:
         if pyxel.btnp(pyxel.KEY_UP):
             self.selected = max(self.selected - 1, 0)
         if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_SPACE):
-            _, action = self.menu_items[self.selected]
+            _, action, _ = self.menu_items[self.selected]
             action()
 
         self.background_game.update()
@@ -1406,12 +1440,23 @@ class Menu:
         pyxel.text(36 - 16, 8, "Constrictor", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
         pyxel.text(36 + 16, 40, "Constructor", pyxel.COLOR_WHITE, _FONT_SPLEEN_16x32)
 
-        for i, (item_text, _) in enumerate(self.menu_items):
+        font=_FONT_SPLEEN_8x16
+        for i, (item_text, _, sp) in enumerate(self.menu_items):
+            if sp:
+                posx, posy = sp.pos
+                item_text = sp.text()
+            else:
+                posy = 92 + (16 + 3) * i
             if i == self.selected:
                 color = _CYCLE_COLORS[(pyxel.frame_count // 3) % len(_CYCLE_COLORS)]
-                text_centered(f"> {item_text} <", 92 + (16 + 3) * i, font=_FONT_SPLEEN_8x16, color=color)
+                text = f"> {item_text} <"
             else:
-                text_centered(item_text, 92 + (16 + 3) * i, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                color = pyxel.COLOR_WHITE
+                text = item_text
+            if sp:
+                pyxel.text(posx, posy, text, color, font)
+            else:
+                text_centered(text, posy, font=font, color=color)
 
 
 class Dispatcher:
