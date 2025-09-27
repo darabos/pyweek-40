@@ -27,8 +27,8 @@ _ENABLE_INVADERS = False
 _CHANNEL_SFX = 3
 
 # Sound bank definitions
-_SOUND_PICK_UP = 0
-_SOUND_DROP = 1
+_SOUND_DROP = 0
+_SOUND_PICK_UP = 1
 
 
 class Direction(enum.IntFlag):
@@ -115,13 +115,13 @@ class Player:
                     self.game.city.add(col, row, self.carrying)
                     self.maximum_altitude = max(self.maximum_altitude, 50 - self.carrying.y)
                     self.carrying = None
-                    pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
+                    pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
             else:
                 b = self.game.city.closest_block(self.x + self.width / 2, self.y + self.height / 2 + 10)
                 if b:
                     if self.game.city.remove(b):
                         self.carrying = b
-                        pyxel.play(_CHANNEL_SFX, _SOUND_DROP)
+                        pyxel.play(_CHANNEL_SFX, _SOUND_PICK_UP)
                     else:
                         # TODO: failed pick-up sound effect
                         pass
