@@ -29,6 +29,7 @@ _CHANNEL_SFX = 3
 # Sound bank definitions
 _SOUND_DROP = 0
 _SOUND_PICK_UP = 1
+_SOUND_FAILED_DROP = 2
 
 
 class Direction(enum.IntFlag):
@@ -108,8 +109,7 @@ class Player:
             if self.carrying:
                 drop_spot = self.game.city.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 18, self.carrying)
                 if drop_spot is None or not drop_spot[3]:
-                    # TODO: failed drop sound effect
-                    pass
+                    pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_DROP)
                 else:
                     col, row, altitude, valid = drop_spot
                     self.game.city.add(col, row, self.carrying)
