@@ -1207,6 +1207,7 @@ class ScoreScreen:
         global game_card
         if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_SPACE):
             game_card.active = Menu()
+            pyxel.stop()
 
         if pyxel.btn(pyxel.KEY_UP):
             self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
@@ -1289,14 +1290,20 @@ class Menu:
             city_y_offset_base=96,
             demo_mode=True,
         )
+        pyxel.play(0, 'T128 V40 @1 @VIB1 { 48, 12, 50 } O5 L1 C# C# C# C#  D C#2 < B2 A G#', loop=True)
+        pyxel.play(1, 'T128 V50 @1 @VIB1 { 48, 12, 50 } O4 L1 F# G# A B  F# F# D C#', loop=True)
+        pyxel.play(2, 'T128 V50 @2 O3 L16 < [ F# R A R F# R > C R C# R < C# R A R G# R ] 4 [ B R > D R < B R > F R F# R < F# R > D R C# R < ] 3 B R > D R < B R > F R F# R C# R < A R G# R', loop=True)
+        pyxel.play(3, 'T128 Q50 @3 L16 @ENV1{40,8,0} O7 [ RRRR FRRR RRFF RRRR ] 7 [ RRFF RFFR FFRR RFRF ] 1', loop=True)
 
         def _PlayGame():
             global game_card
             game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
+            pyxel.stop()
 
         def _ShowCredits():
             global game_card
             game_card.active = Credits()
+            pyxel.stop()
 
         self.menu_items = (
             ("Play Game", _PlayGame),
