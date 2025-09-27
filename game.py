@@ -1274,8 +1274,12 @@ class Credits:
         self.bld_l = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 7 / 16)))]
         self.bld_r = [random.randint(0, len(self.blocks)-1) for _ in range(int(((pyxel.height / 10) * 5 / 16)))]
 
+        pyxel.play(0, 'T120 @2  V40 O4 B B E2 B B E2 B D E- B- C A B2', loop=True)
+        pyxel.play(1, 'T120 @1  V50 O2 G B > C2 < G B > C2 < G B > C D E F# G2', loop=True)
+
     def update(self):
         if pyxel.btnp(pyxel.KEY_ESCAPE):
+            pyxel.stop()
             global game_card
             game_card.active = Menu()
 
