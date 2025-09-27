@@ -787,7 +787,7 @@ class Background:
         for x in range(15):
             clip_blt(x * 16, -20 + altitude * 0.7, 64, 0, 16, 48, colkey=None)
         pyxel.blt(self.planet_x, self.planet_y + altitude * 0.7, 1, 96, 16, 16, 16, colkey=pyxel.COLOR_BLACK)  # ringed planet
-        pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)  # moon
+        pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16, colkey=pyxel.COLOR_BLACK)  # moon
         clip_blt(160, 64 + altitude * 0.75, 16, 152, 88, 56)
         clip_blt(0, 56 + altitude * 0.9, 0, 104, pyxel.width, 48)
         pyxel.blt(0, 40 + altitude, 1, 0, 48, pyxel.width, 56, colkey=0)
