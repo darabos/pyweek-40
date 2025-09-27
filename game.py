@@ -4,15 +4,16 @@ import enum
 import math
 import random
 import pyxel
-import threading
 import textwrap
 from dataclasses import dataclass
 from collections.abc import Callable
 
 
-pyxel.init(240, 320, quit_key=pyxel.KEY_NONE)
-pyxel.load("assets/art.pyxres")
+# Graphics options
+_GRAPHICS_FPS = 30
 
+pyxel.init(240, 320, fps=_GRAPHICS_FPS, quit_key=pyxel.KEY_NONE)
+pyxel.load("assets/art.pyxres")
 
 # Bitmap font definitions
 _FONT_SPLEEN_32x64 = pyxel.Font("assets/spleen-32x64.bdf")
@@ -133,21 +134,19 @@ class RandomPlayer(Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.maximum_altitude = 0
-
-        self.timer: threading.Timer | None = None
         self.direction = Direction.NONE.value
         self.change_direction()
 
     def handle_keypress(self) -> Direction:
         return self.direction
 
+    def update(self):
+        super().update()
+        if pyxel.frame_count % _GRAPHICS_FPS == 0:
+            self.change_direction()
+
     def change_direction(self):
         self.direction = random.choice(list(Direction.__members__.values()))
-
-        if self.timer:
-            self.timer.cancel()
-        self.timer = threading.Timer(1.0, self.change_direction)
-        self.timer.start()
 
 
 class BlockSprite(collections.namedtuple('BlockSprite', 'x y sx sy w h')):
