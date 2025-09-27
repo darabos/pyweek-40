@@ -834,15 +834,19 @@ class NewBlockArea:
 
     def update(self, camera_altitude):
         for idx in range(len(self.blocks)):
-            if idx == self.carried_idx:
-                continue
-            x, y = self.coords_for_idx(idx, camera_altitude)
             if self.blocks[idx] is None:
-                self.blocks[idx] = Block(x, y, None, None, None, random.choice(AllBlocks))
+                self.blocks[idx] = Block(0, 0, None, None, None, random.choice(AllBlocks))
+            x, y = self.coords_for_idx(idx, camera_altitude)
             x_center = self.blocks[idx].blocktype.x_center
             y_center = self.blocks[idx].blocktype.y_center
-            self.blocks[idx].x = x + self.block_width // 2 - x_center
-            self.blocks[idx].y = y + self.height // 2 - y_center
+            x = x + self.block_width // 2 - x_center
+            y = y + self.height // 2 - y_center
+            if idx == self.carried_idx:
+                self.carried_src_x = x
+                self.carried_src_y = y
+                continue
+            self.blocks[idx].x = x
+            self.blocks[idx].y = y
 
     def picked_up(self, block):
         for idx in range(len(self.blocks)):
