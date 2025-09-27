@@ -816,6 +816,7 @@ class NewBlockArea:
     carried_src_x: int
     carried_src_y: int
     carried_idx: int | None = None
+    arrow_hints: int = 5
 
     num: int = 4
     x_origin: int = 56
@@ -859,6 +860,7 @@ class NewBlockArea:
                 self.carried_idx = idx
                 self.carried_src_x = block.x
                 self.carried_src_y = block.y
+                self.arrow_hints -= 1
                 break
 
     def placed(self):
@@ -885,10 +887,12 @@ class NewBlockArea:
                         pyxel.COLOR_GRAY)
 
         if self.carried_idx is None:
-            dx = 2 + (2 * math.cos(pyxel.frame_count / 2))
-            dy = (box_height - 16) / 2
-            pyxel.blt(self.x_origin - 16 - dx, self.y_origin + dy, 0, 48, 88, 16, 16, colkey=pyxel.COLOR_BLACK)
-            pyxel.blt(self.x_origin + box_width + dx, self.y_origin + dy, 0, 48, 104, 16, 16, colkey=pyxel.COLOR_BLACK)
+            # display arrow hints to parts box
+            if self.arrow_hints >= 0:
+                dx = 2 + (2 * math.cos(pyxel.frame_count / 2))
+                dy = (box_height - 16) / 2
+                pyxel.blt(self.x_origin - 16 - dx, self.y_origin + dy, 0, 48, 88, 16, 16, colkey=pyxel.COLOR_BLACK)
+                pyxel.blt(self.x_origin + box_width + dx, self.y_origin + dy, 0, 48, 104, 16, 16, colkey=pyxel.COLOR_BLACK)
 
         pyxel.dither(0.5)
         if self.carried_idx is not None:
