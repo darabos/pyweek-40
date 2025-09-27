@@ -1,4 +1,5 @@
 import abc
+import bisect
 import collections
 import enum
 import math
@@ -32,6 +33,8 @@ _SOUND_DROP = 0
 _SOUND_PICK_UP = 1
 _SOUND_FAILED_DROP = 2
 _SOUND_FAILED_PICK_UP = 3
+
+_CYCLE_COLORS = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
 
 
 def AssertButNotInRelease():
@@ -496,6 +499,11 @@ class City:
     stepy: int = 14
     block_height: int = 8
 
+    base_score: int = 0
+
+    def __post_init__(self):
+        self.base_score = self.score()
+
     @staticmethod
     def base_tile_to_screen(col, row, altitude):
         x = row * City.stepx - col * City.stepy
@@ -565,7 +573,7 @@ class City:
             for tile in tile_col:
                 if tile and tile.blocks:
                     score += len(tile.blocks) * (len(tile.blocks) - 1) // 2
-        return score
+        return score - self.base_score
 
     @staticmethod
     def load(cx: int, cy: int, max_height: int, *, y_offset_base: int):
@@ -835,6 +843,7 @@ class Game:
         INTRO_COUNTDOWN_1 = 4
         INTRO_GO = 5
         PLAY = 6
+        TIMES_UP = 7
     state: State
 
     camera_altitude: int = 0
@@ -855,21 +864,34 @@ class Game:
             self.state = Game.State.PLAY
 
     def update(self):
+        global game_card
+
+        if not self.demo_mode:
+            if pyxel.btnp(pyxel.KEY_ESCAPE):
+                game_card.active = Menu()
+                return
+
         if self.state != Game.State.PLAY:
-            if pyxel.frame_count > self.deadline:
+            if self.state == Game.State.TIMES_UP:
+                if pyxel.frame_count > self.deadline:
+                    game_card.active = ScoreScreen(self.city, self.background, self.camera_altitude)
+                return
+
+            if pyxel.btnp(pyxel.KEY_SPACE):
+                self.state = Game.State.PLAY
+                self.deadline = pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
+            elif pyxel.frame_count > self.deadline:
                 self.state += 1
-                self.deadline = pyxel.frame_count + _GRAPHICS_FPS // 2
+                self.deadline = pyxel.frame_count + _GRAPHICS_FPS
                 if self.state == Game.State.PLAY:
                     self.deadline = pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
             return
 
         if not self.demo_mode:
-            global game_card
-            if pyxel.btnp(pyxel.KEY_ESCAPE):
-                game_card.active = Menu()
             if pyxel.frame_count > self.deadline:
-                # TODO: high-score screen and enter your name etc.; overlaid on your city, and auto-scroll up and down, maybe?
-                game_card.active = Menu()
+                self.state = Game.State.TIMES_UP
+                self.deadline = pyxel.frame_count + _GRAPHICS_FPS
+                return
 
         self.background.update()
         self.player.update()
@@ -912,6 +934,9 @@ class Game:
                 text_centered('1', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
             elif self.state == Game.State.INTRO_GO:
                 text_centered('Go!', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
+            elif self.state == Game.State.TIMES_UP:
+                pyxel.rect(20, 135, pyxel.width - 40, 42, pyxel.COLOR_BLACK)
+                text_centered('Time\'s up!', 140, font=_FONT_SPLEEN_16x32, color=pyxel.COLOR_WHITE)
             return
 
         if not self.demo_mode:
@@ -1071,6 +1096,59 @@ def text_centered(text: str, y: int, *, font: pyxel.Font, color: int):
     pyxel.text(x - dx, y, text, color, font)
 
 
+class ScoreScreen:
+    def __init__(self, city, background, camera_altitude):
+        self.city = city
+        self.background = background
+        self.camera_altitude = camera_altitude
+        self.camera_direction = -1
+        self.maximum_altitude = 100  # TODO
+
+        self.score_table = [
+            ('Grandmaster', 10000, False),
+            ('Master', 5000, False),
+            ('Expert', 2000, False),
+            ('Veteran', 1000, False),
+            ('Learner', 500, False),
+            ('Novice', 250, False),
+            ('Asleep', 0, False),
+            ]
+        score = city.score()
+        if score < 0:
+            text = 'How did you do that?'
+        else:
+            text = 'You!'
+        bisect.insort_left(self.score_table, (text, score, True),
+                           key=lambda x: -x[1])
+
+    def update(self):
+        global game_card
+        if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_SPACE):
+            game_card.active = Menu()
+
+    def draw(self):
+        pyxel.camera(0, 0)
+        self.background.draw(self.camera_altitude)
+        pyxel.camera(0, -self.camera_altitude)
+        self.city.draw()
+        pyxel.camera(0, 0)
+
+        text_centered('Scores!', 20, font=_FONT_SPLEEN_16x32, color=pyxel.COLOR_WHITE)
+
+        font = _FONT_SPLEEN_8x16
+        for idx, (name, score, player) in enumerate(self.score_table):
+            if player:
+                color = _CYCLE_COLORS[(pyxel.frame_count // 3) % len(_CYCLE_COLORS)]
+            else:
+                color = pyxel.COLOR_WHITE
+            y = 60 + idx * 20
+            pyxel.text(30, y, name, color, font)
+            score_text = str(score)
+            pyxel.text(pyxel.width - 30 - text_width(score_text, font),
+                       y,
+                       score_text, color, font)
+
+
 class Credits:
 
     TEXT = textwrap.dedent("""\
@@ -1102,7 +1180,6 @@ class Menu:
 
     def __init__(self):
         self.selected = 0
-        self.cycle_colors = (pyxel.COLOR_RED, pyxel.COLOR_PINK, pyxel.COLOR_PEACH, pyxel.COLOR_GRAY, pyxel.COLOR_WHITE, pyxel.COLOR_GRAY, pyxel.COLOR_PEACH, pyxel.COLOR_PINK)
         self.background_game = Game(
             player_factory=lambda game: RandomPlayer(game, 50, 100),
             city_y_offset_base=96,
@@ -1130,7 +1207,7 @@ class Menu:
             self.selected = min(self.selected + 1, len(self.menu_items) - 1)
         if pyxel.btnp(pyxel.KEY_UP):
             self.selected = max(self.selected - 1, 0)
-        if pyxel.btnp(pyxel.KEY_RETURN):
+        if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_SPACE):
             _, action = self.menu_items[self.selected]
             action()
 
@@ -1144,7 +1221,7 @@ class Menu:
 
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
-                color = self.cycle_colors[(pyxel.frame_count // 3) % len(self.cycle_colors)]
+                color = _CYCLE_COLORS[(pyxel.frame_count // 3) % len(_CYCLE_COLORS)]
                 text_centered(f"> {item_text} <", 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=color)
             else:
                 text_centered(item_text, 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
