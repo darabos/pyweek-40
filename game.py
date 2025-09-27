@@ -225,7 +225,7 @@ def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
             blocktypes.append(bt)
     return blocktypes
 
-NormalBlocks = MakeBlocksFromHalves(0, 16, 8) + MakeBlocksFromHalves(0, 16 + 8 * 16, 2) * 4 + MakeBlocksFromHalves(0, 16 + 10 * 16, 2) * 4
+NormalBlocks = MakeBlocksFromHalves(0, 16, 8) + MakeBlocksFromHalves(0, 16 + 8 * 16, 2) * 4 + MakeBlocksFromHalves(0, 16 + 10 * 16, 3) * 4
 RedBlocks = [
     BlockType(footprint=(
         BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
