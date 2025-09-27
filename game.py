@@ -215,17 +215,31 @@ RedBlocks = [
         BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
               )
     for i in range(2)]
-Skybridge = BlockType(
-    footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                         col=0, row=0, altitude=0),
-               BlockPart(sprites=(BlockSprite(0, -7, 120, 33, 30, 23), ),
-                         col=-1, row=0, altitude=0)))
-Skyramp = BlockType(
-    footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                         col=0, row=0, altitude=0),
-               BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
-                         col=-1, row=0, altitude=1)))
-AllBlocks = NormalBlocks + RedBlocks + [Skybridge, Skyramp] * 10
+Skybridges = [
+    BlockType(
+        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                             col=0, row=0, altitude=0),
+                   BlockPart(sprites=(BlockSprite(0, -7, 120, 33, 30, 23), ),
+                             col=-1, row=0, altitude=0))),
+    BlockType(
+        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                             col=0, row=0, altitude=0),
+                   BlockPart(sprites=(BlockSprite(-16, -8, 120, 104, 32, 24), ),
+                             col=0, row=-1, altitude=0))),
+    ]
+Skyramps = [
+    BlockType(
+        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                             col=0, row=0, altitude=0),
+                   BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
+                             col=-1, row=0, altitude=1))),
+    BlockType(
+        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
+                             col=0, row=0, altitude=0),
+                   BlockPart(sprites=(BlockSprite(-16, -16, 120, 144, 32, 32), ),
+                             col=0, row=-1, altitude=1))),
+    ]
+AllBlocks = NormalBlocks + RedBlocks + Skybridges * 20 + Skyramps * 10
 
 
 @dataclass
@@ -498,30 +512,6 @@ class City:
                         y += y_off
                         b = Block(x, y, col, row, h, sprites[sprite])
                         tile.blocks.append(TileBlock(b, 0))
-
-        # TODO: temp code for testing
-        x, y = City.base_tile_to_screen(12, 11, 0)
-        x += x_off
-        y += y_off
-        b = Block(x, y, 12, 11, 0, Skybridge)
-        tiles[11][12].blocks = [TileBlock(b, 0)]
-        tiles[11][11].blocks = [TileBlock(b, 1)]
-        x, y = City.base_tile_to_screen(12, 11, 1)
-        x += x_off
-        y += y_off
-        b = Block(x, y, 12, 11, 1, NormalBlocks[0])
-        tiles[11][12].blocks.append(TileBlock(b, 0))
-
-        x, y = City.base_tile_to_screen(9, 12, 0)
-        x += x_off
-        y += y_off
-        b = Block(x, y, 9, 12, 0, Skyramp)
-        x, y = City.base_tile_to_screen(8, 12, 0)
-        x += x_off
-        y += y_off
-        nb = Block(x, y, 8, 12, 0, NormalBlocks[0])
-        tiles[12][9].blocks = [TileBlock(b, 0)]
-        tiles[12][8].blocks = [TileBlock(nb, 0), TileBlock(b, 1)]
 
         def screen_to_tile(sx: float, sy: float):
             tx = sx - x_off - 8
