@@ -1002,7 +1002,7 @@ class Game:
             if self.state == Game.State.INTRO_MESSAGE:
                 if self.time_limit == _ZEN_MODE:
                     text_centered('Build to your', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
-                    text_centered("heart's contents", 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                    text_centered("heart's content!", 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
                 else:
                     text_centered('Build as high as', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
                     text_centered('you can in', 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
