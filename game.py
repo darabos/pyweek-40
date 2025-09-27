@@ -175,11 +175,24 @@ class BlockType:
     footprint: tuple[BlockPart, ...]
 
 
-NormalBlocks = [
-    BlockType(footprint=(
-        BlockPart(sprites=(BlockSprite(0, 0, 0, 16 + i * 16, 16, 16), )), )
-              )
-    for i in range(8)]
+def MakeBlocksFromHalves(sprite_x, sprite_y, num_sprites):
+    blocktypes = []
+    for left in range(num_sprites):
+        for right in range(num_sprites):
+            if left == right:
+                bt = BlockType(footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, sprite_x, sprite_y + left * 16, 16, 16), )), ))
+            else:
+                bt = BlockType(footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, sprite_x, sprite_y + left * 16, 8, 16),
+                        BlockSprite(8, 0, sprite_x + 8, sprite_y + right * 16, 8, 16),
+                    )), ))
+            blocktypes.append(bt)
+    return blocktypes
+
+NormalBlocks = MakeBlocksFromHalves(0, 16, 4) + MakeBlocksFromHalves(0, 16 + 4 * 16, 2) + MakeBlocksFromHalves(0, 16 + 6 * 16, 2)
 RedBlocks = [
     BlockType(footprint=(
         BlockPart(sprites=(BlockSprite(0, 0, 48, 16 + i * 16, 16, 16), )), )
@@ -491,7 +504,7 @@ class City:
                 if buildable:
                     tile.blocks = []
                     for h in range(height):
-                        sprite = int(len(sprites) * random.random() ** 3)
+                        sprite = int(len(sprites) * random.random())
                         x, y = City.base_tile_to_screen(col, row, h)
                         x += x_off
                         y += y_off
