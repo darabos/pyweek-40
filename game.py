@@ -216,7 +216,7 @@ RedBlocks = [
               )
     for i in range(2)]
 
-def MakeSkyBridgesRight(base_x, base_y, base_num,
+def MakeSkybridgesRight(base_x, base_y, base_num,
                         bridge_x, bridge_y, bridge_num):
     bts = []
     for bridge_idx in range(bridge_num):
@@ -235,7 +235,7 @@ def MakeSkyBridgesRight(base_x, base_y, base_num,
                         BlockSprite(14 - 3, -7, bridge_x, bridge_y + bridge_idx * 24, 11, 17)),
                                      col=-1, row=0, altitude=0))))
     return bts
-def MakeSkyBridgesLeft(base_x, base_y, base_num,
+def MakeSkybridgesLeft(base_x, base_y, base_num,
                        bridge_x, bridge_y, bridge_num):
     bts = []
     for bridge_idx in range(bridge_num):
@@ -255,22 +255,52 @@ def MakeSkyBridgesLeft(base_x, base_y, base_num,
                                      col=0, row=-1, altitude=0))))
     return bts
 Skybridges = (
-    MakeSkyBridgesRight(0, 16, 8, 163, 9, 3)
+    MakeSkybridgesRight(0, 16, 8, 163, 9, 3)
     +
-    MakeSkyBridgesLeft(0, 16, 8, 168, 104, 3))
+    MakeSkybridgesLeft(0, 16, 8, 168, 104, 3))
 
-Skyramps = [
-    BlockType(
-        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                             col=0, row=0, altitude=0),
-                   BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
-                             col=-1, row=0, altitude=1))),
-    BlockType(
-        footprint=(BlockPart(sprites=(BlockSprite(0, 0, 0, 16, 16, 16), ),
-                             col=0, row=0, altitude=0),
-                   BlockPart(sprites=(BlockSprite(-16, -16, 120, 144, 32, 32), ),
-                             col=0, row=-1, altitude=1))),
-    ]
+def MakeSkyrampsRight(base_x, base_y, base_num,
+                      bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            righter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(8, 0, base_x + 8, base_y + left * 16, 8, 16)),
+                              col=0, row=0, altitude=0),
+                    BlockPart(sprites=(
+                        BlockSprite(14 + 8, -15, base_x + 8, base_y + righter * 16, 8, 16),
+                        BlockSprite(14 - 4, -15, bridge_x, bridge_y + bridge_idx * 32, 12, 25)),
+                                     col=-1, row=0, altitude=1))))
+    return bts
+def MakeSkyrampsLeft(base_x, base_y, base_num,
+                     bridge_x, bridge_y, bridge_num):
+    bts = []
+    for bridge_idx in range(bridge_num):
+        for _ in range(4):
+            left = random.randrange(base_num)
+            right = random.randrange(base_num)
+            lefter = random.randrange(base_num)
+            bts.append(BlockType(
+                footprint=(
+                    BlockPart(sprites=(
+                        BlockSprite(0, 0, base_x, base_y + left * 16, 8, 16),
+                        BlockSprite(8, 0, base_x + 8, base_y + left * 16, 8, 16)),
+                              col=0, row=0, altitude=0),
+                    BlockPart(sprites=(
+                        BlockSprite(-16, -16, base_x, base_y + lefter * 16, 8, 16),
+                        BlockSprite(-8, -16, bridge_x, bridge_y + bridge_idx * 32, 23, 28)),
+                                     col=0, row=-1, altitude=1))))
+    return bts
+Skyramps = (
+    MakeSkyrampsRight(0, 16, 8, 194, 33, 2)
+    +
+    MakeSkyrampsLeft(0, 16, 8, 192, 112, 2))
 AllBlocks = NormalBlocks + RedBlocks + Skybridges + Skyramps * 10
 
 
