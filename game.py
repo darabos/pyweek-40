@@ -116,7 +116,7 @@ class Player:
             self.vx = 0
         if pyxel.btnp(pyxel.KEY_SPACE):
             if self.carrying:
-                drop_spot = self.game.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 18, self.carrying)
+                drop_spot = self.game.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 12, self.carrying)
                 if drop_spot is None or not drop_spot.valid:
                     pyxel.play(_CHANNEL_SFX, _SOUND_FAILED_DROP)
                 else:
@@ -225,7 +225,7 @@ Skyramp = BlockType(
                          col=0, row=0, altitude=0),
                BlockPart(sprites=(BlockSprite(0, -15, 120, 65, 30, 31), ),
                          col=-1, row=0, altitude=1)))
-AllBlocks = NormalBlocks + RedBlocks + [Skybridge, Skyramp]
+AllBlocks = NormalBlocks + RedBlocks + [Skybridge, Skyramp] * 10
 
 
 @dataclass
@@ -785,7 +785,7 @@ class Game:
         if self.player.carrying:
             drop_spot = self.closest_drop_spot(
                 self.player.x + self.player.width / 2,
-                self.player.y + self.player.height / 2 + 18,
+                self.player.y + self.player.height / 2 + 12,
                 self.player.carrying)
             if drop_spot is not None:
                 self.draw_drop_indicator(drop_spot, self.player.carrying)
