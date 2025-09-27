@@ -742,6 +742,7 @@ class Background:
     def __init__(self):
         self.planet_x = -32
         self.randomize_planet_y()
+        self.stars = [(random.randint(0, pyxel.width - 1), random.randint(0, pyxel.height - 1)) for _ in range(100)]
 
     def update(self):
         self.planet_x += 0.75
@@ -776,6 +777,10 @@ class Background:
                 pyxel.rect(0, dark_sky_line, pyxel.width, ground_sky_line - dark_sky_line, 6)
             else:
                 pyxel.rect(0, 0, pyxel.width, ground_sky_line, 6)
+        if altitude > 240:
+            for sx, sy in self.stars:
+                if random.random() < 0.99:
+                    pyxel.pset(sx, sy, 12)
         clip_blt(0, 80 + altitude * 0.7, 24, 0, 32, 48)
         clip_blt(24, 80 + altitude * 0.7, 16, 0, -24, 48)
         clip_blt(0, 80 + 48 + altitude * 0.7, 24, 40, 32, 8)
