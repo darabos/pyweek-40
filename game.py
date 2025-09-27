@@ -666,12 +666,12 @@ def make_invader(city: City):
 
 class Game:
 
-    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, adjust_camera_altitude: bool = True):
+    def __init__(self, *, player_factory: Callable[['Game'], Player], city_y_offset_base: int = 80, demo_mode: bool = False):
         self.player = player_factory(self)
         self.invaders = []
         self.city = City.load(cx=16, cy=0, max_height=5, y_offset_base=city_y_offset_base)
         self.background = Background()
-        self.adjust_camera_altitude = adjust_camera_altitude
+        self.demo_mode = demo_mode
         self.camera_altitude = 0
 
     def update(self):
@@ -691,7 +691,7 @@ class Game:
 
     def draw(self):
         pyxel.camera(0, 0)
-        if self.adjust_camera_altitude:
+        if not self.demo_mode:
             if self.player.y + self.camera_altitude < 40:
                 self.camera_altitude = 40 - self.player.y
             if self.player.y + self.camera_altitude > pyxel.height - 40:
@@ -700,7 +700,7 @@ class Game:
             self.camera_altitude = 0
         self.background.draw(self.camera_altitude)
 
-        if self.adjust_camera_altitude:  # Hack to only draw the score when playing, not when in demo mode.
+        if not self.demo_mode:
             score = self.city.score()
             pyxel.text(5, 5, 'Score: %i' % score, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
 
@@ -812,7 +812,7 @@ class Menu:
         self.background_game = Game(
             player_factory=lambda game: RandomPlayer(game, 50, 100),
             city_y_offset_base=96,
-            adjust_camera_altitude=False,
+            demo_mode=True,
         )
 
         def _PlayGame():
