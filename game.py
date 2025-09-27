@@ -24,6 +24,7 @@ _FONT_SPLEEN_8x16  = pyxel.Font("assets/spleen-8x16.bdf")
 # Features.
 _ENABLE_INVADERS = False
 _RELEASE_MODE = False
+_ZEN_MODE = -1
 
 # Sound channel definitions
 _CHANNEL_SFX = 3
@@ -948,17 +949,20 @@ class Game:
                 return
 
             if pyxel.btnp(pyxel.KEY_SPACE):
+                # shortcut the countdown by pressing space
                 self.state = Game.State.PLAY
-                self.deadline = pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
+                self.deadline = _ZEN_MODE if self.time_limit == _ZEN_MODE else self.frame_count + _GRAPHICS_FPS * self.time_limit
             elif pyxel.frame_count > self.deadline:
+                # countdown before game
                 self.state += 1
                 self.deadline = pyxel.frame_count + _GRAPHICS_FPS
                 if self.state == Game.State.PLAY:
-                    self.deadline = pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
+                    # now start the game for realz
+                    self.deadline = _ZEN_MODE if self.time_limit == _ZEN_MODE else pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
             return
 
         if not self.demo_mode:
-            if pyxel.frame_count > self.deadline:
+            if self.deadline != _ZEN_MODE and pyxel.frame_count > self.deadline:
                 self.state = Game.State.TIMES_UP
                 self.deadline = pyxel.frame_count + _GRAPHICS_FPS
                 return
@@ -996,9 +1000,13 @@ class Game:
             pyxel.rect(0, 0, pyxel.width, pyxel.height, pyxel.COLOR_BLACK)
             pyxel.dither(1.0)
             if self.state == Game.State.INTRO_MESSAGE:
-                text_centered('Build as high as', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
-                text_centered('you can in', 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
-                text_centered('%i seconds!' % self.time_limit, 180, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                if self.time_limit == _ZEN_MODE:
+                    text_centered('Build to your', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                    text_centered("heart's contents", 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                else:
+                    text_centered('Build as high as', 140, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                    text_centered('you can in', 160, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                    text_centered('%i seconds!' % self.time_limit, 180, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
             elif self.state == Game.State.INTRO_COUNTDOWN_3:
                 text_centered('3', 140, font=_FONT_SPLEEN_32x64, color=pyxel.COLOR_WHITE)
             elif self.state == Game.State.INTRO_COUNTDOWN_2:
@@ -1014,9 +1022,15 @@ class Game:
 
         if not self.demo_mode:
             score = self.city.score()
-            pyxel.text(5, 5, 'Score: %i' % score, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
-            time_left = (self.deadline - pyxel.frame_count) / _GRAPHICS_FPS
-            pyxel.text(140, 5, 'Time: %3.1fs' % time_left, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
+            font = _FONT_SPLEEN_8x16
+            if self.deadline == _ZEN_MODE:
+                zentext = 'Zen Mode'
+                xpos = pyxel.width - 8 - text_width(zentext, font)
+                pyxel.text(xpos, 5, zentext, pyxel.COLOR_WHITE, font)
+            else:
+                pyxel.text(5, 5, 'Score: %i' % score, pyxel.COLOR_WHITE, font)
+                time_left = (self.deadline - pyxel.frame_count) / _GRAPHICS_FPS
+                pyxel.text(140, 5, 'Time: %3.1fs' % time_left, pyxel.COLOR_WHITE, _FONT_SPLEEN_8x16)
 
         pyxel.camera(0, -self.camera_altitude)
         for thing in sorted(self.invaders, key=lambda b: (b.y, b.z)):
@@ -1304,9 +1318,6 @@ class Credits:
         for i, blk in enumerate(self.bld_r):
             self.blocks[blk](start_r_x, start_r_y - (i * 16) )
 
-
-
-
 class Menu:
 
     def __init__(self):
@@ -1326,6 +1337,11 @@ class Menu:
             pyxel.stop()
             game_card.active = Game(player_factory=lambda game: Player(game, 100, 100))
 
+        def _PlayGameZen():
+            global game_card
+            pyxel.stop()
+            game_card.active = Game(player_factory=lambda game: Player(game, 100, 100), time_limit=_ZEN_MODE)
+
         def _ShowCredits():
             global game_card
             pyxel.stop()
@@ -1333,6 +1349,7 @@ class Menu:
 
         self.menu_items = (
             ("Play Game", _PlayGame),
+            ("Zen Mode", _PlayGameZen),
             ("Credits", _ShowCredits),
             ("Quit", lambda: pyxel.quit()),
         )
@@ -1359,9 +1376,9 @@ class Menu:
         for i, (item_text, _) in enumerate(self.menu_items):
             if i == self.selected:
                 color = _CYCLE_COLORS[(pyxel.frame_count // 3) % len(_CYCLE_COLORS)]
-                text_centered(f"> {item_text} <", 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=color)
+                text_centered(f"> {item_text} <", 92 + (16 + 3) * i, font=_FONT_SPLEEN_8x16, color=color)
             else:
-                text_centered(item_text, 96 + (16 + 8) * i, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
+                text_centered(item_text, 92 + (16 + 3) * i, font=_FONT_SPLEEN_8x16, color=pyxel.COLOR_WHITE)
 
 
 class Dispatcher:
