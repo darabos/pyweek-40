@@ -743,6 +743,8 @@ class Background:
         def clip_blt(x, y, u, v, w, h, colkey=0):
             y = int(y)
             h = min(h, ground_sky_line - y)
+            if h <= 0:
+                return
             pyxel.blt(x, y, 1, u, v, w, h, colkey=colkey)
         if dark_sky_line >= pyxel.height:
             pyxel.cls(0)
@@ -760,17 +762,20 @@ class Background:
                 pyxel.rect(0, 0, pyxel.width, ground_sky_line, 6)
         clip_blt(0, 80 + altitude * 0.7, 24, 0, 32, 48)
         clip_blt(24, 80 + altitude * 0.7, 16, 0, -24, 48)
+        clip_blt(0, 80 + 48 + altitude * 0.7, 24, 40, 32, 8)
+        clip_blt(24, 80 + 48 + altitude * 0.7, 16, 40, -24, 8)
         for x in range(3, 15):
             clip_blt(x * 16, 80 + altitude * 0.7, 0, 0, 16, 48)
+            clip_blt(x * 16, 80 + 48 + + altitude * 0.7, 0, 40, 16, 8)
         for x in range(15):
             clip_blt(x * 16, 30 + altitude * 0.7, 48, 0, 16, 48)
         for x in range(15):
             clip_blt(x * 16, -20 + altitude * 0.7, 64, 0, 16, 48, colkey=None)
-        pyxel.blt(self.planet_x, self.planet_y + altitude * 0.9, 1, 96, 16, 16, 16, colkey=pyxel.COLOR_BLACK)  # ringed planet
+        pyxel.blt(self.planet_x, self.planet_y + altitude * 0.7, 1, 96, 16, 16, 16, colkey=pyxel.COLOR_BLACK)  # ringed planet
         pyxel.blt(140, -180 + altitude * 0.7, 1, 96, 0, 16, 16)  # moon
-        clip_blt(160, 64 + altitude * 0.75, 16, 144, 88, 56)
-        clip_blt(0, 56 + altitude * 0.9, 0, 104, pyxel.width, 40)
-        pyxel.blt(0, 40 + altitude, 1, 0, 48, pyxel.width, 48, colkey=0)
+        clip_blt(160, 64 + altitude * 0.75, 16, 152, 88, 56)
+        clip_blt(0, 56 + altitude * 0.9, 0, 104, pyxel.width, 48)
+        pyxel.blt(0, 40 + altitude, 1, 0, 48, pyxel.width, 56, colkey=0)
 
 
 def make_invader(city: City):
@@ -1159,12 +1164,12 @@ class ScoreScreen:
         self.maximum_altitude = 100  # TODO
 
         self.score_table = [
-            ('Grandmaster', 10000, False),
-            ('Master', 5000, False),
-            ('Expert', 2000, False),
-            ('Veteran', 1000, False),
-            ('Learner', 500, False),
-            ('Novice', 250, False),
+            ('Grandmaster', 5000, False),
+            ('Master', 2000, False),
+            ('Expert', 1000, False),
+            ('Veteran', 500, False),
+            ('Learner', 250, False),
+            ('Novice', 125, False),
             ('Asleep', 0, False),
             ]
         score = city.score()
