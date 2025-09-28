@@ -60,6 +60,29 @@ class Direction(enum.IntFlag):
     LEFT = enum.auto()
     RIGHT = enum.auto()
 
+def btn(d):
+    return btn_func(pyxel.btn, d)
+def btnp(d):
+    return btn_func(pyxel.btnp, d)
+def any_func(func, *keys):
+    for k in keys:
+        if func(k):
+            return True
+    return False
+def btn_func(func, d):
+    match d:
+        case "UP":
+            return any_func(func, pyxel.KEY_UP, pyxel.KEY_W, pyxel.GAMEPAD1_BUTTON_DPAD_UP)
+        case "DOWN":
+            return any_func(func, pyxel.KEY_DOWN, pyxel.KEY_S, pyxel.GAMEPAD1_BUTTON_DPAD_DOWN)
+        case "LEFT":
+            return any_func(func, pyxel.KEY_LEFT, pyxel.KEY_A, pyxel.GAMEPAD1_BUTTON_DPAD_LEFT)
+        case "RIGHT":
+            return any_func(func, pyxel.KEY_RIGHT, pyxel.KEY_D, pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT)
+        case "SPACE":
+            return any_func(func, pyxel.KEY_SPACE, pyxel.KEY_RETURN, pyxel.KEY_Z, pyxel.GAMEPAD1_BUTTON_A)
+        case "ESCAPE":
+            return any_func(func, pyxel.KEY_ESCAPE, pyxel.KEY_X, pyxel.GAMEPAD1_BUTTON_B, pyxel.GAMEPAD1_BUTTON_BACK)
 
 @dataclass
 class Player:
@@ -84,13 +107,13 @@ class Player:
 
     def handle_keypress(self) -> Direction:
         direction = Direction.NONE.value
-        if pyxel.btn(pyxel.KEY_UP):
+        if btn("UP"):
             direction |= Direction.UP.value
-        if pyxel.btn(pyxel.KEY_DOWN):
+        if btn("DOWN"):
             direction |= Direction.DOWN.value
-        if pyxel.btn(pyxel.KEY_LEFT):
+        if btn("LEFT"):
             direction |= Direction.LEFT.value
-        if pyxel.btn(pyxel.KEY_RIGHT):
+        if btn("RIGHT"):
             direction |= Direction.RIGHT.value
         return direction
 
@@ -127,7 +150,7 @@ class Player:
         if self.x < 0:
             self.x = 0
             self.vx = 0
-        if pyxel.btnp(pyxel.KEY_SPACE):
+        if btnp("SPACE"):
             if self.carrying:
                 drop_spot = self.game.closest_drop_spot(self.x + self.width / 2, self.y + self.height / 2 + 12, self.carrying)
                 if drop_spot is None or not drop_spot.valid:
@@ -970,7 +993,7 @@ class Game:
         global game_card
 
         if not self.demo_mode:
-            if pyxel.btnp(pyxel.KEY_ESCAPE):
+            if btnp("ESCAPE"):
                 game_card.active = Menu()
                 return
 
@@ -980,7 +1003,7 @@ class Game:
                     game_card.active = ScoreScreen(self.city, self.background, self.camera_altitude)
                 return
 
-            if pyxel.btnp(pyxel.KEY_SPACE):
+            if btnp("SPACE"):
                 # shortcut the countdown by pressing space
                 self.state = Game.State.PLAY
                 self.deadline = _ZEN_MODE if self.time_limit == _ZEN_MODE else pyxel.frame_count + _GRAPHICS_FPS * self.time_limit
@@ -1274,17 +1297,17 @@ class ScoreScreen:
         self.background.update()
 
         global game_card
-        if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_SPACE):
+        if btnp("ESCAPE") or btnp("SPACE"):
             pyxel.stop()
             game_card.active = Menu()
 
-        if pyxel.btn(pyxel.KEY_UP):
+        if btn("UP"):
             self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
             if self.camera_altitude + 3 < self.maximum_altitude:
                 self.camera_altitude += 3
             elif self.camera_altitude < self.maximum_altitude:
                 self.camera_altitude = self.maximum_altitude
-        if pyxel.btn(pyxel.KEY_DOWN):
+        if btn("DOWN"):
             self.camera_move_delay = pyxel.frame_count + _GRAPHICS_FPS
             self.camera_altitude -= 3
             if self.camera_altitude < 0:
@@ -1347,7 +1370,7 @@ class Credits:
         sound_play(1, 'T120 @1  V50 O2 G B > C2 < G B > C2 < G B > C D E F# G2', loop=True)
 
     def update(self):
-        if pyxel.btnp(pyxel.KEY_ESCAPE):
+        if btnp("ESCAPE"):
             pyxel.stop()
             global game_card
             game_card.active = Menu()
@@ -1435,13 +1458,13 @@ class Menu:
             self._PlayMusic()
 
     def update(self):
-        if pyxel.btnp(pyxel.KEY_ESCAPE):
+        if btnp("ESCAPE"):
             pyxel.quit()
-        if pyxel.btnp(pyxel.KEY_DOWN):
+        if btnp("DOWN"):
             self.selected = min(self.selected + 1, len(self.menu_items) - 1)
-        if pyxel.btnp(pyxel.KEY_UP):
+        if btnp("UP"):
             self.selected = max(self.selected - 1, 0)
-        if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_SPACE):
+        if btnp("SPACE"):
             _, action, _ = self.menu_items[self.selected]
             action()
 
